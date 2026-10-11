@@ -3,7 +3,7 @@
 | Fase | Estado |
 |---|---|
 | 0 · Diseño técnico | ✅ Aprobada (2026-10-11), ampliada con cortes/siluetas y personalización |
-| 1 · MVP de inventario | 🔧 Implementada y probada en navegador · ⏳ pendiente de publicar y verificar en Android |
+| 1 · MVP de inventario | 🔧 v0.1.1: corregido el bloqueo visto en Android (v0.1.0) · ⏳ pendiente de revalidar en Android |
 | 2 · Lotes, kit de catalogación y copias | ⬜ |
 | 3 · Recomendador | ⬜ |
 | 4 · PWA y robustez | ⬜ |

@@ -11,6 +11,46 @@
 
 Datos de prueba siempre **sintéticos**: las imágenes se generan en el propio test (canvas). Nunca se usan fotos reales.
 
+## Incidencia 2026-10-11 · v0.1.0 bloqueada en Android
+
+**Observado por Iván** (Android, PWA instalada desde GitHub Pages):
+1. Prenda con foto de cámara: correcto.
+2. Prenda con foto de galería: al guardar, el botón se quedó cargando indefinidamente.
+3. Tras cerrar y reabrir, Inicio y Armario se quedan en «Cargando…».
+
+**Análisis del código de v0.1.0 (confirmado):**
+- Inicio, Armario, la ficha y Ajustes usaban `useLiveQuery`. Mientras la consulta no responde muestran «Cargando…», sin límite ni salida. Un error, en cambio, habría mostrado la pantalla de error. Por tanto el síntoma 3 significa que **IndexedDB no respondía** a las lecturas, no que hubiera un registro corrupto.
+- Ninguna operación tenía tiempo límite: ni decodificar, ni codificar, ni la transacción de guardado. El editor compartía un único estado `busy`. Si cualquiera de ellas no terminaba, el botón quedaba en «Espera…» para siempre (síntoma 2).
+- Atomicidad: el guardado era una sola transacción. Un fallo o un cierre a mitad no puede dejar registros parciales; IndexedDB deshace la transacción entera.
+
+**Reproducción (Chromium 153 de escritorio con perfil Pixel 7, NO en Android):** con las pruebas e2e nuevas ejecutadas contra el build de v0.1.0:
+
+| Escenario provocado | v0.1.0 | v0.1.1 |
+|---|---|---|
+| Otra conexión mantiene abierta una escritura en `items` | Inicio solo muestra «Cargando…» (idéntico al síntoma 3) | «La base de datos no responde…», con Reintentar y diagnóstico; se recupera sola al liberarse |
+| Guardar mientras `blobs` está bloqueada | Botón «Espera…» deshabilitado para siempre (idéntico al síntoma 2) | Aborta a los 20 s, avisa, no guarda nada a medias, conserva el formulario; reintento correcto |
+| La codificación de imagen no termina | «Procesando…» para siempre | Error «ha tardado demasiado», interfaz libre, «Reintentar foto» correcto |
+| Lote con HEIC + JPEG corrupto + texto | Solo se informa del primero | Un mensaje por archivo |
+
+**Hipótesis sobre el origen en el móvil (NO confirmadas en Android):**
+- **H1 (la que mejor encaja con ambos síntomas):** una escritura en IndexedDB que no terminó (por el almacenamiento del Blob o por una conexión de una instancia anterior de la app) dejó la base de datos bloqueada. Al reabrir la PWA sin que Chrome se cerrase del todo, las lecturas quedaron en cola.
+  - Mitigaciones: tiempo límite con aborto de la transacción, binarios como ArrayBuffer y pantallas con estado «no responde».
+- **H2:** el procesado de la foto de galería se colgó (archivo servido por un proveedor en la nube o canvas acelerado por GPU). Explica el síntoma 2, pero no el 3.
+  - Mitigaciones: lectura única con tiempo límite, canvas en CPU con alternativa y tiempos límite.
+- **Descartadas por el código:**
+  - Un registro corrupto: habría producido un error visible, no una espera infinita.
+  - Un cambio de versión del esquema que bloqueara la apertura: solo existe la v1.
+- **Poco probable:** falta de memoria. Suele provocar la recarga de la pestaña, no una espera indefinida. Se añade un límite de 100 MP y se libera antes la memoria.
+
+**Datos en tu móvil:** la v0.1.1 lee los registros de la v0.1.0 (Blob), comprobado en un test. No hay ninguna limpieza ni migración automática. *Ajustes → Diagnóstico* permite comprobar la coherencia sin modificar nada.
+
+**Cómo obtener más información si se repite:**
+1. *Ajustes → Diagnóstico → Copiar informe*: IDs, recuentos, estado de IndexedDB y últimos errores; sin nombres ni fotos.
+2. Depuración remota:
+   - Activa la depuración USB en el móvil y conéctalo al PC.
+   - En el PC abre `chrome://inspect` → *inspect* sobre la PWA.
+   - Revisa *Console* y *Application → IndexedDB → armario-digital*. Es solo lectura mientras no edites nada.
+
 ## Registro de pruebas ejecutadas
 
 | Fecha | Fase | Prueba | Resultado |
@@ -22,6 +62,11 @@ Datos de prueba siempre **sintéticos**: las imágenes se generan en el propio t
 | 2026-10-11 | 1 | `npm run e2e`: 4 tests contra el build | ✅ 4/4 |
 | 2026-10-11 | 1 | Hook pre-commit con una imagen y un manifiesto añadidos | ✅ commit bloqueado |
 | 2026-10-11 | 1 | Revisión visual de inicio, editor, ficha y armario (viewport Pixel 7) | ✅ tras corregir alto de tarjetas e icono |
+| 2026-10-11 | 1 | **Android real (Iván), v0.1.0**: instalación, cámara, galería | ❌ guardado con foto de galería bloqueado y app en «Cargando…» (incidencia arriba) |
+| 2026-10-11 | 1 | Nuevos e2e de robustez contra el build de **v0.1.0** | ❌ 4/4 fallan como se esperaba (reproducen el bloqueo) |
+| 2026-10-11 | 1 | **v0.1.1** `npm test`: 61 tests en 7 archivos | ✅ 61/61 |
+| 2026-10-11 | 1 | **v0.1.1** lint + build + check-dist | ✅ |
+| 2026-10-11 | 1 | **v0.1.1** `npm run e2e`: 12 tests (4 originales + 8 de robustez) | ✅ 12/12 |
 
 Entorno: Linux, Node 22, Chromium 153 headless. Playwright no pudo descargar su navegador en el entorno de desarrollo; se usó un Chromium empaquetado mediante `CHROMIUM_PATH`. En la CI de GitHub se instala el de Playwright.
 
@@ -44,6 +89,18 @@ Entorno: Linux, Node 22, Chromium 153 headless. Playwright no pudo descargar su 
 - Corte por categoría: `length` con valores distintos según la categoría, e `inseam` solo en pantalones cortos.
 - Marcas de estimado.
 - Alias de color.
+
+**Robustez** (`src/db/robustness.test.ts`, `e2e/robustness.spec.ts`, v0.1.1):
+- Tiempo límite y aborto de la transacción con otra conexión bloqueando.
+- Recuperación de Inicio cuando la base de datos vuelve a responder.
+- Guardado colgado y reintento.
+- Codificación colgada y «Reintentar foto».
+- Fallo de escritura (`QuotaExceededError`) sin datos parciales.
+- Cámara y galería con 12 MP, 48 MP, 640×480, PNG vertical y WebP.
+- HEIC, JPEG corrupto y archivo de texto, con un mensaje por archivo.
+- Apertura con datos en formato v0.1.0.
+- Persistencia y coherencia tras **cerrar el navegador por completo** y reabrirlo (perfil persistente).
+- Fichas inválidas que no bloquean el resto y detección de incoherencias sin modificar nada.
 
 **E2E** (`e2e/app.spec.ts`):
 - Alta desde la galería con un JPEG de 2400×3200 con EXIF+GPS. Se guarda como WebP de 1600 px sin `Exif` ni marca GPS en los binarios, con la huella del original.

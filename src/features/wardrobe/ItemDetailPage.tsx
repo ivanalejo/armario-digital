@@ -1,8 +1,12 @@
-import { useLiveQuery } from 'dexie-react-hooks';
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { db } from '../../db/db';
 import { deleteItem, patchItem } from '../../db/items';
+import { useDbQuery } from '../../db/useDbQuery';
+import { ItemSchema, formatIssues } from '../../domain/schema';
+import { LoadState } from '../../ui/LoadState';
+import { logError } from '../../platform/errorLog';
+import { useState } from 'react';
 import { isEstimated } from '../../domain/catalog';
 import {
   FORMALITY,
@@ -46,9 +50,30 @@ const colorChip = (id: string) => {
 
 export function ItemDetailPage({ id }: { id: string }) {
   const [, navigate] = useLocation();
-  const item = useLiveQuery(() => db.items.get(id), [id], null);
+  const q = useDbQuery(() => db.items.get(id), [id], 'cargar ficha');
+  const [actionError, setActionError] = useState<string>();
 
-  if (item === null) return <div className="page"><p className="muted">Cargando…</p></div>;
+  if (q.status !== 'ready') {
+    return (
+      <div className="page">
+        <PageHeader title="Prenda" onBack={() => history.back()} />
+        <LoadState q={q} what="la prenda" />
+      </div>
+    );
+  }
+  const parsed = q.data ? ItemSchema.safeParse(q.data) : undefined;
+  if (parsed && !parsed.success) {
+    return (
+      <div className="page">
+        <PageHeader title="Ficha con problemas" onBack={() => history.back()} />
+        <div className="notice notice--warn">
+          <p>Esta ficha tiene datos no válidos y no se puede mostrar. No se ha modificado ni borrado nada.</p>
+          <ul>{formatIssues(parsed.error).map((m) => <li key={m}>{m}</li>)}</ul>
+        </div>
+      </div>
+    );
+  }
+  const item = parsed?.data;
   if (!item) {
     return (
       <div className="page">
@@ -60,10 +85,22 @@ export function ItemDetailPage({ id }: { id: string }) {
   const est = (p: string) => isEstimated(item, p);
   const text = (v: string | null | undefined, none: string) => (v === null ? <span className="muted">{none}</span> : v ?? UNKNOWN);
 
+  async function act(what: string, fn: () => Promise<unknown>) {
+    setActionError(undefined);
+    try {
+      await fn();
+    } catch (err) {
+      logError(what, err);
+      setActionError((err as Error).message);
+    }
+  }
+
   async function onDelete() {
     if (!confirm(`¿Eliminar «${item!.name}» y sus fotos? No se puede deshacer.`)) return;
-    await deleteItem(item!.id);
-    navigate('/armario', { replace: true });
+    await act('borrar prenda', async () => {
+      await deleteItem(item!.id);
+      navigate('/armario', { replace: true });
+    });
   }
 
   const cutDefs = cutAttrsFor(item.categoryId, item.subcategoryId);
@@ -75,7 +112,7 @@ export function ItemDetailPage({ id }: { id: string }) {
         onBack={() => history.back()}
         actions={
           <>
-            <button type="button" className="icon-btn" onClick={() => void patchItem(item.id, { favorite: !item.favorite })} aria-label={item.favorite ? 'Quitar de favoritas' : 'Marcar como favorita'}>
+            <button type="button" className="icon-btn" onClick={() => void act('favorito', () => patchItem(item.id, { favorite: !item.favorite }))} aria-label={item.favorite ? 'Quitar de favoritas' : 'Marcar como favorita'}>
               <Icon name="heart" filled={item.favorite} />
             </button>
             <Link href={`/prenda/${item.id}/editar`} className="icon-btn" aria-label="Editar"><Icon name="edit" /></Link>
@@ -91,6 +128,7 @@ export function ItemDetailPage({ id }: { id: string }) {
         )}
       </div>
 
+      {actionError && <p className="notice notice--error" role="alert">{actionError}</p>}
       {item.isDraft && <p className="notice notice--warn">Borrador: completa el tipo de prenda y el color principal.</p>}
       {!!item.estimated?.length && (
         <p className="notice notice--estimated"><span className="dot-estimated" /> Hay datos estimados. Edita la prenda para confirmarlos o corregirlos.</p>
@@ -99,7 +137,7 @@ export function ItemDetailPage({ id }: { id: string }) {
 
       <div className="field">
         <div className="field__label">Estado</div>
-        <ChipGroup options={STATUSES} selected={[item.status]} onToggle={(s: StatusId) => void patchItem(item.id, { status: s })} />
+        <ChipGroup options={STATUSES} selected={[item.status]} onToggle={(s: StatusId) => void act('cambiar estado', () => patchItem(item.id, { status: s }))} />
       </div>
 
       <dl className="kvs">

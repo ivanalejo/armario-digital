@@ -2,8 +2,11 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
 import { getSetting, setSetting } from './db/settings';
+import { installGlobalErrorHandlers, logError } from './platform/errorLog';
 import { requestPersistence } from './platform/storage';
 import './styles/global.css';
+
+installGlobalErrorHandlers();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -12,7 +15,12 @@ createRoot(document.getElementById('root')!).render(
 );
 
 // Pide almacenamiento persistente una vez por arranque y guarda lo que responda el navegador.
+// Si la base de datos no responde, esto no debe bloquear ni romper nada: solo se registra.
 void (async () => {
-  const granted = await requestPersistence();
-  if (granted !== (await getSetting<boolean | null>('persistGranted', null))) await setSetting('persistGranted', granted);
+  try {
+    const granted = await requestPersistence();
+    if (granted !== (await getSetting<boolean | null>('persistGranted', null))) await setSetting('persistGranted', granted);
+  } catch (err) {
+    logError('almacenamiento persistente', err);
+  }
 })();

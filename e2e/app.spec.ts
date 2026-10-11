@@ -119,5 +119,5 @@ test('rechaza HEIC con un mensaje claro', async ({ page }) => {
     { name: 'a.heic', mimeType: 'image/heic', buffer: Buffer.from('fake') },
     { name: 'b.heic', mimeType: 'image/heic', buffer: Buffer.from('fake') },
   ]);
-  await expect(page.getByText(/HEIC/)).toBeVisible();
+  await expect(page.getByText(/HEIC/).first()).toBeVisible();
 });

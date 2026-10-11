@@ -67,5 +67,19 @@ Cuatro capas:
 3. La misma comprobación en CI, que bloquea el despliegue.
 4. `check-dist` sobre lo publicado.
 
+## ADR-014 · Binarios en IndexedDB como ArrayBuffer · Aceptada (2026-10-11, v0.1.1)
+- Contexto: en Android, una escritura de la v0.1.0 no terminó y dejó la base de datos sin responder. Guardar objetos Blob depende de la implementación de cada navegador, que los escribe como archivos aparte.
+- Decisión:
+  - Convertir a `ArrayBuffer` antes de abrir la transacción y guardar `{ data, type }`.
+  - Leer ambos formatos.
+- No está demostrado que el Blob fuera la causa. Es una mitigación de bajo coste que además simplificará la exportación.
+
+## ADR-015 · Tiempos límite, aborto de transacciones y diagnóstico · Aceptada (2026-10-11, v0.1.1)
+- Ninguna operación de imagen o de base de datos puede dejar la interfaz esperando sin límite.
+- Las transacciones que vencen se abortan para liberar el bloqueo.
+- Las consultas pasan a estado «lenta» con diagnóstico.
+- Se añade una pantalla de diagnóstico de solo lectura y un registro local de errores.
+- Nunca se borra ni se «repara» automáticamente ningún dato.
+
 ## Pendientes
-- Crear el repositorio `ivanalejo/armario-digital` en GitHub y activar Pages con origen “GitHub Actions”. Desde esta sesión no hay credenciales de GitHub válidas.
+- Revalidar la v0.1.1 en Android y confirmar o descartar las hipótesis de la incidencia del 2026-10-11 (`TESTING.md`).

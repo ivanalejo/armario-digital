@@ -133,6 +133,9 @@ img { display: block; }
 .card__meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--danger); min-height: 18px; }
 .thumb { width: 100%; height: 100%; object-fit: cover; }
 .thumb--empty { background: var(--surface-2); aspect-ratio: 3 / 4; }
+.thumb--broken { display: grid; place-items: center; color: var(--muted); font-size: 0.75rem; text-align: center; padding: 8px; }
+.diag pre { white-space: pre-wrap; word-break: break-word; font-size: 0.75rem; background: var(--surface-2); padding: 10px; border-radius: var(--radius-sm); max-height: 40vh; overflow: auto; }
+.ok { color: #2e7d32; } .bad { color: var(--danger); }
 .empty { display: grid; justify-items: center; gap: 10px; text-align: center; padding: 40px 16px; color: var(--muted); }
 
 /* Hoja de filtros */

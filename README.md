@@ -2,7 +2,7 @@
 
 PWA personal para inventariar ropa, calzado y accesorios con fotos y, más adelante, generar outfits con lo que realmente hay en el armario. Todo funciona en local: sin backend, sin cuentas, sin APIs externas y sin telemetría.
 
-> **Estado:** Fase 1 (MVP de inventario) implementada y probada en navegador. Pendiente de verificar en Android tras publicar. Ver [docs/ROADMAP.md](docs/ROADMAP.md).
+> **Estado:** v0.1.1 · Fase 1 (MVP de inventario). Corrige el bloqueo observado en Android con la v0.1.0 ([CHANGELOG](CHANGELOG.md)). Pendiente de revalidar en Android. Ver [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Qué hace ahora
 
@@ -13,6 +13,7 @@ PWA personal para inventariar ropa, calzado y accesorios con fotos y, más adela
 - Catálogo en cuadrícula con búsqueda (entiende alias de color: «azul oscuro» = azul marino) y filtros.
 - Borradores para prendas incompletas.
 - Instalable y usable sin conexión.
+- *Ajustes → Diagnóstico*: estado de la base de datos, coherencia y últimos errores (solo lectura).
 
 ## Privacidad
 

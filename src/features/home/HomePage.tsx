@@ -1,7 +1,8 @@
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
-import { db } from '../../db/db';
+import { loadItems } from '../../db/health';
+import { useDbQuery } from '../../db/useDbQuery';
+import { LoadState } from '../../ui/LoadState';
 import { catalogStats } from '../../domain/catalog';
 import { getStorageStatus, type StorageStatus } from '../../platform/storage';
 import { Icon } from '../../ui/Icon';
@@ -9,10 +10,18 @@ import { ItemCard } from '../wardrobe/WardrobePage';
 import { setCatalogFilter } from '../wardrobe/filterStore';
 
 export function HomePage() {
-  const items = useLiveQuery(() => db.items.toArray(), []);
+  const q = useDbQuery(() => loadItems(), [], 'cargar Inicio');
   const [storage, setStorage] = useState<StorageStatus>();
-  useEffect(() => void getStorageStatus().then(setStorage), []);
-  if (!items) return <div className="page"><p className="muted">Cargando…</p></div>;
+  useEffect(() => void getStorageStatus().then(setStorage).catch(() => undefined), []);
+  if (q.status !== 'ready' || !q.data) {
+    return (
+      <div className="page">
+        <header className="hero"><h1>Tu armario</h1></header>
+        <LoadState q={q} what="tus prendas" />
+      </div>
+    );
+  }
+  const { items, invalid } = q.data;
 
   const s = catalogStats(items);
   const recent = [...items].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6);
@@ -29,6 +38,12 @@ export function HomePage() {
         <h1>Tu armario</h1>
         <p className="muted">Todo se guarda solo en este dispositivo.</p>
       </header>
+
+      {invalid.length > 0 && (
+        <Link href="/diagnostico" className="notice notice--warn">
+          {invalid.length} ficha{invalid.length > 1 ? 's' : ''} con datos no válidos no se muestra{invalid.length > 1 ? 'n' : ''}. No se ha borrado nada: ver diagnóstico.
+        </Link>
+      )}
 
       <div className="tiles">
         {tiles.map((t) => (

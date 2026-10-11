@@ -103,7 +103,7 @@ Regex común: `^(itm|img|out|wear|fb|kit)_[a-z0-9_]{6,48}$`. El ID es **opaco**:
 | `createdAt` | datetime | Sí | |
 | `source` | `{ name?, bytes?, lastModified?, sha256? }` | No | Huella del archivo **original** del que salió la imagen (no se guarda el original). Permite reconocer una reimportación de la misma foto y sustituir la imagen después |
 
-Binarios en la tabla `blobs` con clave `[imageId, variant]`, `variant ∈ { display, thumb, original }`.
+Binarios en la tabla `blobs` con clave `[imageId, variant]`, `variant ∈ { display, thumb, original }`. Desde v0.1.1 cada registro guarda `data` (ArrayBuffer) + `type` (MIME). Los registros de v0.1.0 tienen `blob` (Blob) y se leen igual, sin migración.
 
 - `display` (≤ 1600 px, WebP, sin EXIF/GPS) y `thumb` (≤ 400 px) siempre.
 - `original` **no se guarda por defecto**. El esquema la admite para una futura opción “conservar originales”; si se activara, el original se guardaría tal cual (con su EXIF) y nunca saldría en kits de catalogación.

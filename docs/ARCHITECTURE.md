@@ -162,6 +162,30 @@ IndexedDB no indexa booleanos: favoritos y borradores se filtran en memoria. Los
 - HEIC/HEIF: Chrome Android no lo decodifica de forma fiable. Se detecta y se muestra un error claro (“configura la cámara en JPEG”).
 - Las URLs `blob:` creadas para mostrar imágenes se revocan al desmontar componentes (evita fugas de memoria en la cuadrícula).
 
+## 6.1 Robustez (v0.1.1)
+
+Tras el fallo en Android de la v0.1.0 (ver `TESTING.md`, incidencia 2026-10-11):
+
+- **Ninguna operación espera para siempre.**
+  - Cada paso del procesado de imagen (leer, decodificar, codificar) tiene un tiempo límite de 30 s.
+  - Cada transacción de escritura tiene un tiempo límite de 20 s. Al vencer, la transacción se **aborta** para liberar el bloqueo de IndexedDB, y el usuario recibe un mensaje claro con el formulario intacto.
+- **Consultas con estados diferenciados** (`useDbQuery`): cargando → lenta (8 s, con «Reintentar» y diagnóstico) → lista / error. Sustituye a `useLiveQuery`, que podía dejar «Cargando…» indefinidamente.
+- **Lectura tolerante** (`loadItems`): las fichas que no validan se apartan y se señalan, sin borrarlas ni impedir ver el resto.
+- **Binarios como `ArrayBuffer` + tipo** en lugar de `Blob`. Reduce la dependencia del almacenamiento de Blobs de cada navegador. Los registros con Blob de la v0.1.0 se siguen leyendo, sin migración.
+- **Procesado de imagen más defensivo:**
+  - El archivo se lee a memoria una sola vez (las fotos de galería pueden venir de un proveedor en la nube).
+  - El canvas trabaja en CPU (`willReadFrequently`); si la codificación falla, se repite con un canvas del DOM.
+  - Límite de 100 MP.
+  - Errores por archivo: un fallo no detiene el resto del lote y se puede reintentar.
+- **Errores visibles y registrados:**
+  - Manejadores globales de `error` y `unhandledrejection`.
+  - Error boundary por pantalla: un fallo no tumba la navegación.
+  - Registro de los últimos 30 errores en `localStorage`, que funciona aunque IndexedDB no responda.
+- **Diagnóstico** (`#/diagnostico`, solo lectura):
+  - Abre IndexedDB con la API nativa y con Dexie.
+  - Hace recuentos, revisa coherencia (referencias rotas, huérfanos) y muestra los últimos errores.
+  - El informe se puede copiar; contiene IDs y recuentos, nunca nombres ni fotos.
+
 ## 7. Offline e instalación
 
 - vite-plugin-pwa genera el SW con precache de todo el build (JS, CSS, HTML, iconos). Estrategia: cache-first para el app shell; no hay llamadas de datos a red.

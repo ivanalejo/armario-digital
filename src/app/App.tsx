@@ -1,8 +1,10 @@
-import { Component, type ReactNode } from 'react';
+import { Component, useEffect, useState, type ReactNode } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Link, Route, Router, Switch, useLocation } from 'wouter';
 import { useHashLocation } from 'wouter/use-hash-location';
+import { DiagnosticsPage } from '../features/diagnostics/DiagnosticsPage';
 import { ItemEditorPage } from '../features/editor/ItemEditorPage';
+import { logError, onError } from '../platform/errorLog';
 import { HomePage } from '../features/home/HomePage';
 import { OutfitsPage } from '../features/outfits/OutfitsPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
@@ -57,22 +59,70 @@ function UpdatePrompt() {
   );
 }
 
+/** Captura errores de una pantalla sin tumbar la navegación ni el resto de secciones. */
 class ErrorBoundary extends Component<{ children: ReactNode }, { error?: Error }> {
   override state: { error?: Error } = {};
   static getDerivedStateFromError(error: Error) {
     return { error };
   }
+  override componentDidCatch(error: Error) {
+    logError('pantalla', error);
+  }
   override render() {
     if (!this.state.error) return this.props.children;
     return (
       <div className="page">
-        <h1>Algo ha fallado</h1>
-        <p>Tus datos siguen guardados en el dispositivo. Recarga la app para continuar.</p>
+        <h1>Esta pantalla ha fallado</h1>
+        <p>Tus datos siguen guardados en el dispositivo. Puedes ir a otra sección o recargar.</p>
         <pre className="error-box">{this.state.error.message}</pre>
-        <button type="button" className="btn" onClick={() => location.reload()}>Recargar</button>
+        <div className="row">
+          <button type="button" className="btn" onClick={() => location.reload()}>Recargar</button>
+          <a href="#/diagnostico" className="btn btn--ghost">Ver diagnóstico</a>
+        </div>
       </div>
     );
   }
+}
+
+/** Aviso breve para errores asíncronos que no ha gestionado ninguna pantalla. */
+function ErrorToast() {
+  const [msg, setMsg] = useState<string>();
+  useEffect(
+    () =>
+      onError((e) => {
+        if (e.context.startsWith('error no capturado') || e.context.startsWith('promesa')) setMsg(e.message);
+      }),
+    [],
+  );
+  if (!msg) return null;
+  return (
+    <div className="toast" role="alert">
+      <span>Se ha producido un error: {msg}</span>
+      <a href="#/diagnostico" className="btn btn--small btn--ghost" onClick={() => setMsg(undefined)}>Diagnóstico</a>
+      <button type="button" className="btn btn--small btn--ghost" onClick={() => setMsg(undefined)}>Cerrar</button>
+    </div>
+  );
+}
+
+function Routes() {
+  const [loc] = useLocation();
+  return (
+    <ErrorBoundary key={loc}>
+      <Switch>
+        <Route path="/" component={HomePage} />
+        <Route path="/armario" component={WardrobePage} />
+        <Route path="/nueva">{() => <ItemEditorPage />}</Route>
+        <Route path="/prenda/:id/editar">{(p) => <ItemEditorPage key={p.id} id={p.id} />}</Route>
+        <Route path="/prenda/:id">{(p) => <ItemDetailPage id={p.id} />}</Route>
+        <Route path="/outfits" component={OutfitsPage} />
+        <Route path="/ajustes" component={SettingsPage} />
+        <Route path="/diagnostico" component={DiagnosticsPage} />
+        <Route>
+          <div className="page"><p>Página no encontrada.</p><Link href="/" className="btn">Ir al inicio</Link></div>
+        </Route>
+      </Switch>
+    </ErrorBoundary>
+  );
 }
 
 export function App() {
@@ -80,21 +130,11 @@ export function App() {
     <ErrorBoundary>
       <Router hook={useHashLocation}>
         <main className="app">
-          <Switch>
-            <Route path="/" component={HomePage} />
-            <Route path="/armario" component={WardrobePage} />
-            <Route path="/nueva">{() => <ItemEditorPage />}</Route>
-            <Route path="/prenda/:id/editar">{(p) => <ItemEditorPage key={p.id} id={p.id} />}</Route>
-            <Route path="/prenda/:id">{(p) => <ItemDetailPage id={p.id} />}</Route>
-            <Route path="/outfits" component={OutfitsPage} />
-            <Route path="/ajustes" component={SettingsPage} />
-            <Route>
-              <div className="page"><p>Página no encontrada.</p><Link href="/" className="btn">Ir al inicio</Link></div>
-            </Route>
-          </Switch>
+          <Routes />
         </main>
         <BottomNav />
         <UpdatePrompt />
+        <ErrorToast />
       </Router>
     </ErrorBoundary>
   );

@@ -1,6 +1,7 @@
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useState } from 'react';
+import { Link } from 'wouter';
 import { db } from '../../db/db';
+import { useDbQuery } from '../../db/useDbQuery';
 import { SCHEMA_VERSION } from '../../domain/schema';
 import { formatBytes, getStorageStatus, requestPersistence, type StorageStatus } from '../../platform/storage';
 import { Icon } from '../../ui/Icon';
@@ -9,8 +10,9 @@ import { PageHeader } from '../../ui/PageHeader';
 export function SettingsPage() {
   const [st, setSt] = useState<StorageStatus>();
   const [asked, setAsked] = useState<boolean | null>();
-  const counts = useLiveQuery(async () => ({ items: await db.items.count(), images: await db.images.count() }), []);
-  const refresh = () => void getStorageStatus().then(setSt);
+  const cq = useDbQuery(async () => ({ items: await db.items.count(), images: await db.images.count() }), [], 'contar en Ajustes');
+  const counts = cq.data;
+  const refresh = () => void getStorageStatus().then(setSt).catch(() => undefined);
   useEffect(refresh, []);
 
   const persistLabel =
@@ -25,7 +27,7 @@ export function SettingsPage() {
         <dl className="kvs">
           <div className="kv"><dt>Persistente</dt><dd data-testid="persist-status">{persistLabel}</dd></div>
           <div className="kv"><dt>Espacio usado</dt><dd>{formatBytes(st?.usage ?? null)} de {formatBytes(st?.quota ?? null)} (estimación del navegador)</dd></div>
-          <div className="kv"><dt>Contenido</dt><dd>{counts ? `${counts.items} prendas · ${counts.images} fotos` : '—'}</dd></div>
+          <div className="kv"><dt>Contenido</dt><dd>{counts ? `${counts.items} prendas · ${counts.images} fotos` : cq.status === 'loading' ? '…' : 'sin respuesta de la base de datos'}</dd></div>
         </dl>
         {st?.persisted === false && (
           <>
@@ -55,6 +57,12 @@ export function SettingsPage() {
           <li>Las fotos se reducen y se guardan sin metadatos EXIF ni ubicación GPS. La foto original de tu galería no se modifica.</li>
           <li>Los datos están ligados a este navegador y a esta dirección web. Borrar los datos del sitio en Chrome también afecta a otras apps publicadas en ivanalejo.github.io.</li>
         </ul>
+      </section>
+
+      <section className="panel">
+        <h2 className="h2">Diagnóstico</h2>
+        <p className="hint">Comprueba la base de datos, la coherencia de las fichas y los últimos errores. Solo lectura: no modifica tus datos.</p>
+        <Link href="/diagnostico" className="btn btn--ghost">Abrir diagnóstico</Link>
       </section>
 
       <p className="muted small">Armario Digital {__APP_VERSION__} · esquema v{SCHEMA_VERSION}</p>

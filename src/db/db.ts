@@ -2,6 +2,7 @@
 // Todas las tablas del modelo existen desde v1, aunque algunas se usen en fases
 // posteriores, para que las copias de seguridad tengan siempre la misma forma.
 import Dexie, { type Table } from 'dexie';
+import { logError } from '../platform/errorLog';
 import type { BlobRecord, FeedbackEvent, ImageMeta, Item, Kit, Outfit, WearEntry } from '../domain/schema';
 
 export interface SettingRecord {
@@ -48,3 +49,6 @@ export class ArmarioDB extends Dexie {
 }
 
 export const db = new ArmarioDB();
+
+// Otra pestaña o una versión anterior abierta pueden impedir abrir la base de datos.
+db.on('blocked', () => logError('base de datos', new Error('Apertura bloqueada por otra conexión abierta (¿otra ventana de la app?)')));

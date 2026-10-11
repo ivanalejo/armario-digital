@@ -155,10 +155,18 @@ export type ImageMeta = z.infer<typeof ImageMetaSchema>;
 
 export const BLOB_VARIANTS = ['display', 'thumb', 'original'] as const;
 export type BlobVariant = (typeof BLOB_VARIANTS)[number];
+/**
+ * Binario de una imagen. Desde v0.1.1 se guarda como ArrayBuffer (`data` + `type`):
+ * evita depender de cómo cada navegador almacena objetos Blob en IndexedDB.
+ * Los registros de v0.1.0 tienen `blob` y se siguen leyendo sin migración.
+ */
 export interface BlobRecord {
   imageId: string;
   variant: BlobVariant;
-  blob: Blob;
+  data?: ArrayBuffer;
+  type?: string;
+  /** Formato de v0.1.0. */
+  blob?: Blob;
 }
 
 // --- Entidades de fases posteriores (definidas ya para que DB y copias las soporten) ---

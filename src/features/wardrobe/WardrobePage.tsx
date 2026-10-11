@@ -1,7 +1,8 @@
-import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
-import { db } from '../../db/db';
+import { loadItems } from '../../db/health';
+import { useDbQuery } from '../../db/useDbQuery';
+import { LoadState } from '../../ui/LoadState';
 import { DEFAULT_STATUSES, filterItems } from '../../domain/catalog';
 import type { Item } from '../../domain/schema';
 import {
@@ -90,7 +91,9 @@ function FilterPanel({ onClose }: { onClose: () => void }) {
 }
 
 export function WardrobePage() {
-  const items = useLiveQuery(() => db.items.toArray(), []);
+  const q = useDbQuery(() => loadItems(), [], 'cargar Armario');
+  const items = q.data?.items;
+  const invalid = q.data?.invalid ?? [];
   const f = useCatalogFilter();
   const [panel, setPanel] = useState(false);
   const shown = useMemo(() => (items ? filterItems(items, f) : []), [items, f]);
@@ -123,9 +126,14 @@ export function WardrobePage() {
         ))}
       </div>
 
+      {invalid.length > 0 && (
+        <Link href="/diagnostico" className="notice notice--warn">
+          {invalid.length} ficha{invalid.length > 1 ? 's' : ''} con datos no válidos no se muestra{invalid.length > 1 ? 'n' : ''} (no se ha borrado nada). Ver diagnóstico.
+        </Link>
+      )}
       {items === undefined ? (
-        <p className="muted">Cargando…</p>
-      ) : items.length === 0 ? (
+        <LoadState q={q} what="tus prendas" />
+      ) : items.length === 0 && invalid.length === 0 ? (
         <div className="empty">
           <Icon name="hanger" size={48} />
           <p>Tu armario está vacío.</p>

@@ -32,7 +32,7 @@ export async function makeJpegWithGps(page: Page, width = 2400, height = 3200, c
       const blob = await cv.convertToBlob({ type: 'image/jpeg', quality: 0.9 });
       const bytes = new Uint8Array(await blob.arrayBuffer());
       let s = '';
-      for (const x of bytes) s += String.fromCharCode(x);
+      for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
       return btoa(s);
     },
     [width, height, color],
@@ -40,6 +40,28 @@ export async function makeJpegWithGps(page: Page, width = 2400, height = 3200, c
   const jpeg = Buffer.from(b64, 'base64');
   // Insertar APP1 justo después de SOI (FFD8).
   return Buffer.concat([jpeg.subarray(0, 2), exifSegment(), jpeg.subarray(2)]);
+}
+
+/** Imagen sintética de las dimensiones y formato indicados (JPEG, PNG o WebP). */
+export async function makeImage(page: Page, width: number, height: number, mime: string): Promise<Buffer> {
+  const b64 = await page.evaluate(
+    async ([w, h, type]) => {
+      const cv = new OffscreenCanvas(w as number, h as number);
+      const ctx = cv.getContext('2d')!;
+      const g = ctx.createLinearGradient(0, 0, w as number, h as number);
+      g.addColorStop(0, '#2f5fb3');
+      g.addColorStop(1, '#d8c7a6');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w as number, h as number);
+      const blob = await cv.convertToBlob({ type: type as string, quality: 0.85 });
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let s = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      return btoa(s);
+    },
+    [width, height, mime],
+  );
+  return Buffer.from(b64, 'base64');
 }
 
 /** Lee el contenido de la base de datos de la app desde la página. */
@@ -55,9 +77,11 @@ export async function readDb(page: Page) {
           const all = (name: string) => new Promise<unknown[]>((res) => { const r = tx.objectStore(name).getAll(); r.onsuccess = () => res(r.result); });
           void Promise.all([all('items'), all('images'), all('blobs')]).then(async ([items, images, blobs]) => {
             const out = [];
-            for (const b of blobs as { imageId: string; variant: string; blob: Blob }[]) {
-              const text = new TextDecoder('latin1').decode(await b.blob.arrayBuffer());
-              out.push({ imageId: b.imageId, variant: b.variant, type: b.blob.type, size: b.blob.size, hasExif: text.includes('Exif'), hasGps: text.includes('GPSMARKER') });
+            // Admite el formato de v0.1.0 (Blob) y el actual (ArrayBuffer + type).
+            for (const b of blobs as { imageId: string; variant: string; blob?: Blob; data?: ArrayBuffer; type?: string }[]) {
+              const buf = b.data ?? (await b.blob!.arrayBuffer());
+              const text = new TextDecoder('latin1').decode(buf);
+              out.push({ imageId: b.imageId, variant: b.variant, type: b.type ?? b.blob!.type, size: buf.byteLength, hasExif: text.includes('Exif'), hasGps: text.includes('GPSMARKER') });
             }
             db.close();
             resolve({ items, images: images as never, blobs: out });

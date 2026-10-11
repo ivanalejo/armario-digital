@@ -3,6 +3,7 @@ import { db } from '../../db/db';
 import { findImageBySourceHash, getBlob, type PhotoSlot } from '../../db/items';
 import { ImageError, processImage } from '../../images/process';
 import type { ProcessOptions, ProcessedImage } from '../../images/types';
+import { logError } from '../../platform/errorLog';
 import { Icon } from '../../ui/Icon';
 import { Thumb } from '../../ui/Thumb';
 import { CropDialog } from './CropDialog';
@@ -13,59 +14,85 @@ interface Props {
   itemId?: string;
   photos: PhotoSlot[];
   onChange: (photos: PhotoSlot[]) => void;
-  onBusy?: (busy: boolean) => void;
+  /** Avisa al editor de que hay fotos procesándose (para no guardar a medias). */
+  onProcessing?: (processing: boolean) => void;
 }
 
-/** Qué hacer con la foto cuando termine el recorte. */
-type Pending = { source: Blob; replaceAt?: number; keepSource?: ProcessedImage['source'] };
+/** Trabajo de procesado: lo que hay que hacer con una foto. */
+interface Job {
+  source: Blob;
+  opts?: ProcessOptions;
+  replaceAt?: number;
+  keepSource?: ProcessedImage['source'];
+}
+interface Failure extends Job {
+  message: string;
+}
 
 let keySeq = 0;
 const newKey = () => `n${++keySeq}`;
 
-export function PhotoManager({ itemId, photos, onChange, onBusy }: Props) {
+export function PhotoManager({ itemId, photos, onChange, onProcessing }: Props) {
   const camRef = useRef<HTMLInputElement>(null);
   const galRef = useRef<HTMLInputElement>(null);
   const replaceRef = useRef<HTMLInputElement>(null);
   const [selected, setSelected] = useState(0);
-  const [pending, setPending] = useState<Pending>();
+  const [pending, setPending] = useState<Job>();
   const [working, setWorking] = useState(false);
+  const [failures, setFailures] = useState<Failure[]>([]);
   const [notice, setNotice] = useState<string>();
 
-  const busy = (b: boolean) => {
-    setWorking(b);
-    onBusy?.(b);
-  };
-
-  async function warnIfDuplicate(img: ProcessedImage) {
+  async function duplicateNotice(img: ProcessedImage): Promise<string | undefined> {
     const sha = img.source?.sha256;
-    if (!sha) return;
-    const found = await findImageBySourceHash(sha);
-    if (found && found.itemId !== itemId) {
-      const other = await db.items.get(found.itemId);
-      setNotice(`Esta foto ya se usó en «${other?.name ?? found.itemId}». Comprueba que no sea la misma prenda.`);
-    }
-  }
-
-  async function processInto(list: PhotoSlot[], source: Blob, opts: ProcessOptions, at?: number, keepSource?: ProcessedImage['source']) {
-    const image = await processImage(source, opts);
-    if (keepSource) image.source = keepSource; // recorte de una foto ya guardada: conserva la huella del original
-    else await warnIfDuplicate(image);
-    const slot: PhotoSlot = { kind: 'new', key: newKey(), image };
-    const next = [...list];
-    if (at !== undefined) next[at] = slot;
-    else next.push(slot);
-    return next;
-  }
-
-  async function run(task: () => Promise<void>) {
-    setNotice(undefined);
-    busy(true);
+    if (!sha) return undefined;
     try {
-      await task();
-    } catch (e) {
-      setNotice(e instanceof ImageError ? e.message : `No se pudo procesar la foto: ${(e as Error).message}`);
+      const found = await findImageBySourceHash(sha);
+      if (found && found.itemId !== itemId) {
+        const other = await db.items.get(found.itemId);
+        return `Esta foto ya se usó en «${other?.name ?? found.itemId}». Comprueba que no sea la misma prenda.`;
+      }
+    } catch {
+      /* el aviso de duplicado es opcional: si la consulta falla, se sigue */
+    }
+    return undefined;
+  }
+
+  /**
+   * Procesa una lista de trabajos de uno en uno. Un fallo no detiene los demás
+   * y nunca deja la interfaz en «Procesando…»: el estado se restablece siempre.
+   */
+  async function runJobs(jobs: Job[]) {
+    setNotice(undefined);
+    setWorking(true);
+    onProcessing?.(true);
+    let next = photos;
+    const failed: Failure[] = [];
+    const notices: string[] = [];
+    try {
+      for (const job of jobs) {
+        try {
+          const image = await processImage(job.source, job.opts);
+          if (job.keepSource) image.source = job.keepSource; // recorte de una foto ya guardada: misma huella del original
+          else {
+            const dup = await duplicateNotice(image);
+            if (dup) notices.push(dup);
+          }
+          const slot: PhotoSlot = { kind: 'new', key: newKey(), image };
+          next = [...next];
+          if (job.replaceAt !== undefined && job.replaceAt < next.length) next[job.replaceAt] = slot;
+          else if (next.length < MAX_PHOTOS) next.push(slot);
+          onChange(next);
+          setSelected(job.replaceAt ?? next.length - 1);
+        } catch (err) {
+          logError('procesar foto', err);
+          failed.push({ ...job, message: err instanceof ImageError ? err.message : `No se pudo procesar la foto: ${(err as Error).message}` });
+        }
+      }
     } finally {
-      busy(false);
+      setFailures(failed);
+      setNotice(notices[0]);
+      setWorking(false);
+      onProcessing?.(false);
     }
   }
 
@@ -76,38 +103,29 @@ export function PhotoManager({ itemId, photos, onChange, onBusy }: Props) {
 
   function onGallery(files: FileList | null) {
     if (!files?.length) return;
-    const list = [...files].slice(0, MAX_PHOTOS - photos.length);
+    const list = [...files].slice(0, Math.max(0, MAX_PHOTOS - photos.length));
     if (list.length === 1) return setPending({ source: list[0]! });
-    void run(async () => {
-      let next = photos;
-      for (const f of list) next = await processInto(next, f, {}); // de una en una para no agotar memoria
-      onChange(next);
-      setSelected(next.length - 1);
-    });
-  }
-
-  async function sourceOf(slot: PhotoSlot): Promise<{ blob: Blob; source: ProcessedImage['source'] } | undefined> {
-    if (slot.kind === 'new') return { blob: slot.image.display, source: slot.image.source };
-    const blob = await getBlob(slot.imageId, 'display');
-    const meta = await db.images.get(slot.imageId);
-    return blob ? { blob, source: meta?.source } : undefined;
+    void runJobs(list.map((source) => ({ source })));
   }
 
   async function recrop(i: number) {
     const slot = photos[i];
     if (!slot) return;
-    const s = await sourceOf(slot);
-    if (s) setPending({ source: s.blob, replaceAt: i, keepSource: s.source });
+    try {
+      if (slot.kind === 'new') return setPending({ source: slot.image.display, replaceAt: i, keepSource: slot.image.source });
+      const [blob, meta] = await Promise.all([getBlob(slot.imageId, 'display'), db.images.get(slot.imageId)]);
+      if (!blob) return setNotice('No se ha encontrado la imagen guardada para recortarla.');
+      setPending({ source: blob, replaceAt: i, keepSource: meta?.source });
+    } catch (err) {
+      logError('recortar foto', err);
+      setNotice(`No se ha podido abrir la foto para recortarla: ${(err as Error).message}`);
+    }
   }
 
   function confirmCrop(opts: ProcessOptions) {
-    const p = pending!;
+    const job = { ...pending!, opts };
     setPending(undefined);
-    void run(async () => {
-      const next = await processInto(photos, p.source, opts, p.replaceAt, p.keepSource);
-      onChange(next);
-      setSelected(p.replaceAt ?? next.length - 1);
-    });
+    void runJobs([job]);
   }
 
   function move(i: number, to: number) {
@@ -143,27 +161,27 @@ export function PhotoManager({ itemId, photos, onChange, onBusy }: Props) {
             <p>Añade al menos una foto</p>
           </div>
         )}
-        {working && <div className="photos__busy">Procesando…</div>}
+        {working && <div className="photos__busy" role="status">Procesando…</div>}
       </div>
 
       {sel && (
         <div className="photos__toolbar" aria-label="Acciones de la foto">
-          <button type="button" className="icon-btn" onClick={() => move(selected, selected - 1)} disabled={selected === 0} aria-label="Mover a la izquierda">
+          <button type="button" className="icon-btn" onClick={() => move(selected, selected - 1)} disabled={selected === 0 || working} aria-label="Mover a la izquierda">
             <Icon name="left" />
           </button>
-          <button type="button" className="icon-btn" onClick={() => move(selected, 0)} disabled={selected === 0} aria-label="Usar como principal" title="Usar como principal">
+          <button type="button" className="icon-btn" onClick={() => move(selected, 0)} disabled={selected === 0 || working} aria-label="Usar como principal" title="Usar como principal">
             <Icon name="star" filled={selected === 0} />
           </button>
-          <button type="button" className="icon-btn" onClick={() => void recrop(selected)} aria-label="Recortar o girar">
+          <button type="button" className="icon-btn" onClick={() => void recrop(selected)} disabled={working} aria-label="Recortar o girar">
             <Icon name="crop" />
           </button>
-          <button type="button" className="icon-btn" onClick={() => replaceRef.current?.click()} aria-label="Sustituir foto">
+          <button type="button" className="icon-btn" onClick={() => replaceRef.current?.click()} disabled={working} aria-label="Sustituir foto">
             <Icon name="swap" />
           </button>
-          <button type="button" className="icon-btn icon-btn--danger" onClick={() => remove(selected)} aria-label="Eliminar foto">
+          <button type="button" className="icon-btn icon-btn--danger" onClick={() => remove(selected)} disabled={working} aria-label="Eliminar foto">
             <Icon name="trash" />
           </button>
-          <button type="button" className="icon-btn" onClick={() => move(selected, selected + 1)} disabled={selected >= photos.length - 1} aria-label="Mover a la derecha">
+          <button type="button" className="icon-btn" onClick={() => move(selected, selected + 1)} disabled={selected >= photos.length - 1 || working} aria-label="Mover a la derecha">
             <Icon name="right" />
           </button>
         </div>
@@ -188,6 +206,18 @@ export function PhotoManager({ itemId, photos, onChange, onBusy }: Props) {
           <Icon name="image" />
         </button>
       </div>
+
+      {failures.length > 0 && (
+        <div className="notice notice--error" role="alert">
+          <ul>{failures.map((f, i) => <li key={i}>{f.message}</li>)}</ul>
+          <div className="row">
+            <button type="button" className="btn btn--small" onClick={() => void runJobs(failures)} disabled={working}>
+              Reintentar foto{failures.length > 1 ? 's' : ''}
+            </button>
+            <button type="button" className="btn btn--small btn--ghost" onClick={() => setFailures([])}>Descartar</button>
+          </div>
+        </div>
+      )}
       {notice && <p className="notice notice--warn" role="status">{notice}</p>}
 
       <input ref={camRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { onCamera(e.target.files); e.target.value = ''; }} data-testid="input-camera" />

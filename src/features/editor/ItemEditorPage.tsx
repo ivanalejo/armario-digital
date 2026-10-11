@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { db } from '../../db/db';
-import { ValidationError, saveItem, type PhotoSlot } from '../../db/items';
+import { DbError, ValidationError, saveItem, type PhotoSlot } from '../../db/items';
+import { logError } from '../../platform/errorLog';
 import { isEstimated } from '../../domain/catalog';
 import {
   CATEGORIES,
@@ -81,22 +82,57 @@ export function ItemEditorPage({ id }: { id?: string }) {
   const [, navigate] = useLocation();
   const [form, setForm] = useState<FormState>();
   const [photos, setPhotos] = useState<PhotoSlot[]>([]);
-  const [busy, setBusy] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [loadError, setLoadError] = useState<string>();
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!id) {
       setForm(newForm());
       return;
     }
-    void db.items.get(id).then((item) => {
-      if (!item) return navigate('/armario', { replace: true });
-      setForm(formFromItem(item));
-      setPhotos(item.imageIds.map((imageId) => ({ kind: 'existing', imageId })));
-    });
-  }, [id, navigate]);
+    setLoadError(undefined);
+    let alive = true;
+    const timer = setTimeout(() => alive && setLoadError('La base de datos no responde al cargar la prenda.'), 10_000);
+    db.items
+      .get(id)
+      .then((item) => {
+        if (!alive) return;
+        clearTimeout(timer);
+        if (!item) return navigate('/armario', { replace: true });
+        setForm(formFromItem(item));
+        setPhotos(item.imageIds.map((imageId) => ({ kind: 'existing', imageId })));
+      })
+      .catch((err: unknown) => {
+        clearTimeout(timer);
+        logError('abrir prenda para editar', err);
+        if (alive) setLoadError(`No se ha podido cargar la prenda: ${(err as Error).message}`);
+      });
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [id, navigate, attempt]);
 
-  if (!form) return <div className="page"><p className="muted">Cargando…</p></div>;
+  if (!form) {
+    return (
+      <div className="page">
+        {loadError ? (
+          <div className="notice notice--error" role="alert">
+            <p>{loadError}</p>
+            <div className="row">
+              <button type="button" className="btn btn--small" onClick={() => setAttempt((a) => a + 1)}>Reintentar</button>
+              <a href="#/diagnostico" className="btn btn--small btn--ghost">Ver diagnóstico</a>
+            </div>
+          </div>
+        ) : (
+          <p className="muted" role="status">Cargando…</p>
+        )}
+      </div>
+    );
+  }
   const f = form.input;
   const est = (path: string) => isEstimated(f, path);
   const set = (path: string, value: unknown) => setForm((cur) => (cur ? setField(cur, path, value) : cur));
@@ -106,13 +142,16 @@ export function ItemEditorPage({ id }: { id?: string }) {
 
   async function onSave() {
     setErrors([]);
-    setBusy(true);
+    setSaving(true);
     try {
       const saved = await saveItem(finalize(form!), photos);
       navigate(`/prenda/${saved.id}`, { replace: true });
     } catch (e) {
+      // El formulario y las fotos siguen en pantalla: se puede corregir o reintentar.
+      if (!(e instanceof ValidationError) && !(e instanceof DbError)) logError('guardar prenda', e);
       setErrors(e instanceof ValidationError ? e.issues : [(e as Error).message]);
-      setBusy(false);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -120,7 +159,7 @@ export function ItemEditorPage({ id }: { id?: string }) {
     <div className="page page--editor">
       <PageHeader title={id ? 'Editar prenda' : 'Nueva prenda'} onBack={() => history.back()} />
 
-      <PhotoManager itemId={id} photos={photos} onChange={setPhotos} onBusy={setBusy} />
+      <PhotoManager itemId={id} photos={photos} onChange={setPhotos} onProcessing={setProcessing} />
 
       {!!f.estimated?.length && (
         <div className="notice notice--estimated">
@@ -257,8 +296,8 @@ export function ItemEditorPage({ id }: { id?: string }) {
 
       <div className="save-bar">
         {missing.length > 0 && <span className="hint">Se guardará como borrador: falta {missing.join(' y ')}.</span>}
-        <button type="button" className="btn btn--wide" onClick={() => void onSave()} disabled={busy} data-testid="save-item">
-          <Icon name="check" size={18} /> {busy ? 'Espera…' : 'Guardar'}
+        <button type="button" className="btn btn--wide" onClick={() => void onSave()} disabled={saving || processing} data-testid="save-item">
+          <Icon name="check" size={18} /> {saving ? 'Guardando…' : processing ? 'Procesando foto…' : errors.length ? 'Reintentar guardado' : 'Guardar'}
         </button>
       </div>
     </div>
