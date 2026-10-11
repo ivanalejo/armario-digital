@@ -1,0 +1,3 @@
+#!/bin/sh
+# Bloquea fotos, copias, kits y manifiestos con datos del armario.
+node scripts/guard-files.mjs --staged || exit 1

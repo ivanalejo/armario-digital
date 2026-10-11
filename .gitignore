@@ -1,0 +1,34 @@
+# Dependencias y builds
+node_modules/
+dist/
+dev-dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.env*
+.DS_Store
+
+# === Datos personales: NUNCA al repositorio ===
+private/
+*.armario.zip
+*.armario.json
+kit_*.zip
+patch-*.json
+*.zip
+*.7z
+*.rar
+# Imágenes (solo se permiten los iconos de la app)
+*.jpg
+*.jpeg
+*.JPG
+*.JPEG
+*.png
+*.PNG
+*.webp
+*.heic
+*.HEIC
+*.heif
+*.avif
+*.dng
+!public/icons/*.png

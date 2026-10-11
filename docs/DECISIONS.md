@@ -1,0 +1,71 @@
+# Registro de decisiones (ADR)
+
+Formato: contexto → decisión → consecuencias.
+
+## ADR-001 · Stack: React + TS + Vite + Dexie · Aceptada
+Dependencias añadidas, todas pequeñas y justificadas:
+- Zod: validación y tipos.
+- fflate: ZIP en streaming (se instala en Fase 2).
+- wouter: router mínimo.
+- vite-plugin-pwa: service worker.
+- react-easy-crop: recorte táctil.
+
+## ADR-002 · Zod como fuente única de tipos y validación · Aceptada
+
+## ADR-003 · fflate en lugar de JSZip · Aceptada
+Necesario para copias de más de 150 MB sin cargarlas enteras en memoria.
+
+## ADR-004 · Fotos: variantes optimizadas, original no conservado por defecto · Aceptada (2026-10-11)
+- Se guardan `display` (≤ 1600 px, WebP, sin EXIF/GPS) y `thumb` (≤ 400 px).
+- El archivo de origen nunca se modifica.
+- Se guarda la huella del original (nombre, tamaño, fecha, SHA-256) para reconocer reimportaciones y facilitar sustituciones.
+- El esquema admite una variante `original` para una futura opción “conservar originales”.
+- Volver a recortar parte de `display`, con pérdida mínima a ese tamaño.
+
+## ADR-005 · Desconocido = ausente, inexistente = `null`, estimado = ruta en `estimated` · Aceptada (ampliada 2026-10-11)
+Sustituye a `review.fields`. Un único mecanismo distingue confirmado, estimado y desconocido para cualquier campo, incluidos los atributos de corte, sin duplicar estructuras.
+
+## ADR-006 · Clima separado de ocasión · Aceptada
+
+## ADR-007 · Publicación en `ivanalejo.github.io/armario-digital/` · Aceptada (2026-10-11)
+- Repositorio independiente `ivanalejo/armario-digital`, público (lo exige Pages en plan gratuito).
+- Comparte origen con la PWA de entreno: misma cuota de almacenamiento, y “Borrar datos del sitio” afecta a ambas. Riesgo asumido y documentado.
+- El origen no debe cambiar; cambiarlo obliga a migrar mediante backup.
+
+## ADR-008 · Kit de catalogación como flujo principal · Aceptada (2026-10-11)
+- Los IDs los asigna siempre la app.
+- El ID y un código de verificación se imprimen solo en copias temporales.
+- El patch se valida contra el kit (`kitId` + `check`) antes de aplicarse.
+- La revisión visual muestra la foto limpia frente a la ficha propuesta.
+
+## ADR-009 · Hash routing · Aceptada
+
+## ADR-010 · Instalación y SW básicos en Fase 1 · Aceptada
+
+## ADR-011 · Corte y silueta como mapa `cut` con atributos por categoría · Aceptada (2026-10-11)
+- Alternativas descartadas:
+  - Columnas fijas para todo: muchos campos vacíos que no aplican.
+  - Un tipo distinto por categoría: obliga a migrar al añadir atributos.
+- Decisión: `cut` es un mapa `atributo → valor`. El vocabulario define cada atributo, sus valores (con volumen 0–3 para el motor) y a qué categorías o subcategorías se aplica.
+- Añadir atributos o valores no requiere migración.
+- La validación comprueba que cada atributo corresponde al tipo de prenda.
+
+## ADR-012 · Personalización mediante registro de eventos y modelo derivado · Aceptada (diseño; implementación en Fase 5)
+- Las interacciones se guardan como eventos inmutables con contexto.
+- Las afinidades se calculan con contracción bayesiana (k≈3) y doble semivida (30 y 365 días), a tres niveles: prenda, pareja y rasgo.
+- El aprendizaje solo actúa en el criterio de preferencias, con peso acotado, y se reserva una cuota de exploración.
+- Ventajas:
+  - Recalculable y reiniciable.
+  - Sin estado opaco.
+  - Viaja en la copia.
+  - No necesita IA ni red.
+
+## ADR-013 · Protección del repositorio contra datos personales · Aceptada (2026-10-11)
+Cuatro capas:
+1. `.gitignore` con lista negra amplia.
+2. Hook `pre-commit` versionado, que se activa con `npm install`.
+3. La misma comprobación en CI, que bloquea el despliegue.
+4. `check-dist` sobre lo publicado.
+
+## Pendientes
+- Crear el repositorio `ivanalejo/armario-digital` en GitHub y activar Pages con origen “GitHub Actions”. Desde esta sesión no hay credenciales de GitHub válidas.
