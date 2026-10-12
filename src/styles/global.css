@@ -294,3 +294,13 @@ textarea.input { resize: vertical; }
 .history__date { display: grid; width: 74px; flex: none; font-size: 0.85rem; }
 .history__thumbs { display: flex; gap: 6px; flex: 1; overflow-x: auto; }
 .history__thumbs .thumb { width: 44px; height: 58px; border-radius: 8px; flex: none; aspect-ratio: auto; }
+
+/* ===== Copias de seguridad ===== */
+.notice--ok { background: var(--accent-soft); }
+.backup-export { display: grid; gap: 10px; }
+.backup-line--warn { color: var(--text); background: var(--amber-soft); padding: 10px 12px; border-radius: var(--radius-sm); }
+.restore { display: grid; gap: 14px; }
+.restore-row { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; }
+.restore-row__img { width: 48px; height: 64px; border-radius: 8px; object-fit: cover; flex: none; aspect-ratio: auto; }
+.restore-row__text { flex: 1; display: grid; }
+.restore-row input { width: 22px; height: 22px; flex: none; }

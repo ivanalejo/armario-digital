@@ -4,8 +4,9 @@
 |---|---|
 | 0 · Diseño técnico | ✅ Aprobada (2026-10-11), ampliada con cortes/siluetas y personalización |
 | 1 · MVP de inventario | 🔧 v0.1.1: corregido el bloqueo visto en Android (v0.1.0) · ⏳ pendiente de revalidar en Android |
-| 2 · Lotes, kit de catalogación y copias | ⬜ **Siguiente recomendada** (aún no hay copias de seguridad) |
-| 3 · Recomendador | 🔧 v0.2.0: implementado y probado en navegador · ⏳ validación en Android y con el armario real |
+| 2 · Copias de seguridad (2a) | 🔧 v0.1.2: implementadas y probadas en navegador · ⏳ prueba en Android |
+| 2b · Lotes y kit de catalogación | ⬜ **Siguiente recomendada** |
+| 3 · Recomendador | 🔧 v0.2.0 → integrado en v0.3.0: implementado y probado en navegador · ⏳ validación en Android y con el armario real |
 | 4 · PWA y robustez | ⬜ |
 | 5 · Personalización progresiva | ⬜ |
 
@@ -39,6 +40,15 @@ Criterios de aceptación (✅ verificado · ⏳ pendiente; detalle en `TESTING.m
 
 ## Fase 2 · Lotes, kit de catalogación y copias
 
+> **Dividida (2026-10-12):** las copias de seguridad (2a) se adelantan como v0.1.2 sobre la v0.1.1, para poder hacer una copia del móvil **antes** de instalar el recomendador. Los lotes y el kit (2b) quedan pendientes.
+
+Estado de 2a (v0.1.2), con los criterios 5, 6, 8 y 9 de la lista de abajo:
+- ✅ 5. Exportación `.armario.zip` completa: fichas, fotos con sus bytes exactos, conjuntos, historial, valoraciones, kits y vocabulario. Validada al importar. `scripts/validate-package.ts` no se ha hecho: la validación vive en la app.
+- 🔧 6. Restauración en instalación limpia: mismo número de entidades y mismos hashes de fotos, verificado en e2e con un perfil de navegador nuevo. ⏳ **En Android** (procedimiento en `TESTING.md`).
+- ✅ 7 (parcial). Conflictos con decisión explícita y atomicidad, para copias. `batch` y `patch` siguen pendientes (2b).
+- ✅ 8. Batería de copias dañadas o incompatibles con mensajes comprensibles.
+- ✅ 9. Inicio y Ajustes muestran la última copia generada y los cambios sin copiar.
+
 Criterios de aceptación:
 1. Seleccionar más de 30 fotos crea más de 30 borradores sin bloquear la UI (procesado en worker, con progreso).
 2. Revisión de borradores con selección múltiple, edición de atributos comunes (≤ 3 toques por atributo) y unir varias fotos en una prenda.
@@ -57,9 +67,9 @@ Criterios de aceptación:
 
 ## Fase 3 · Recomendador
 
-> **Orden cambiado (2026-10-12):** a petición de Iván, la Fase 3 se adelanta a la Fase 2. Riesgo aceptado: mientras no exista la exportación (Fase 2), el inventario solo está en el navegador del móvil.
+> **Orden cambiado (2026-10-12):** a petición de Iván, la Fase 3 se adelanta a la Fase 2. Riesgo aceptado: mientras no exista la exportación (Fase 2), el inventario solo está en el navegador del móvil. Después se decidió publicar antes las copias (v0.1.2) y entregar el recomendador integrado con ellas en la v0.3.0 (ADR-020).
 
-Estado v0.2.0 (✅ verificado · ⏳ pendiente):
+Estado v0.2.0, igual en v0.3.0 (✅ verificado · ⏳ pendiente):
 - ✅ 1. Motor puro en `src/engine/`: 97 % de líneas cubiertas.
 - ✅ 2. Escenarios automatizados (37 tests): obligatorias, disponibilidad, lluvia, frío, calor, formalidad, desconocidos y estimados, silueta, diversidad, inventarios pequeños o vacíos, y 1 000 armarios aleatorios con invariantes.
 - ✅ 3. Cada propuesta muestra puntuación, hasta 3 motivos y avisos (incluida la confianza baja).

@@ -2,7 +2,7 @@
 
 PWA personal para inventariar ropa, calzado y accesorios con fotos y, más adelante, generar outfits con lo que realmente hay en el armario. Todo funciona en local: sin backend, sin cuentas, sin APIs externas y sin telemetría.
 
-> **Estado:** v0.2.0 · Fase 3 (recomendador) implementada y probada en navegador; pendiente de validar en Android y con el armario real. La Fase 2 (copias de seguridad) es la siguiente recomendada. Ver [CHANGELOG](CHANGELOG.md) y [docs/ROADMAP.md](docs/ROADMAP.md).
+> **Estado:** v0.3.0 · Fase 1 + copias de seguridad (Fase 2a) + recomendador (Fase 3), probados en navegador; pendiente de validar en Android con el armario real. Ver [CHANGELOG](CHANGELOG.md) y [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Qué hace ahora
 
@@ -23,7 +23,7 @@ PWA personal para inventariar ropa, calzado y accesorios con fotos y, más adela
 - Los datos viven en IndexedDB de este navegador. La app no hace peticiones de red; solo el navegador descarga la propia app desde GitHub Pages.
 - Una CSP con `connect-src 'self'` bloquea cualquier conexión a otro dominio, y un test e2e lo comprueba.
 - Las fotos se reducen a 1600 px (miniatura de 400 px) en WebP y se guardan **sin EXIF ni GPS**. La foto original de la galería no se toca.
-- **Aún no hay copias de seguridad (Fase 2).** Si borras los datos de Chrome, desinstalas la app o pierdes el móvil, el inventario se pierde.
+- **Copias de seguridad:** Ajustes → *Crear copia de seguridad* genera un `.armario.zip` en *Descargas*. Guárdalo fuera del móvil: es lo único que protege el inventario si borras los datos de Chrome, desinstalas la app o pierdes el móvil. Para restaurar, incluso en un móvil nuevo: Ajustes → *Restaurar o importar una copia* (`docs/IMPORT_EXPORT.md §8`).
 
 ## Desarrollo
 

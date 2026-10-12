@@ -81,7 +81,7 @@ Cuatro capas:
 - Se añade una pantalla de diagnóstico de solo lectura y un registro local de errores.
 - Nunca se borra ni se «repara» automáticamente ningún dato.
 
-## ADR-016 · Fase 3 antes que Fase 2 · Aceptada (2026-10-12)
+## ADR-016 · Fase 3 antes que Fase 2 · Aceptada y luego matizada por ADR-020 (2026-10-12)
 Iván prioriza el recomendador y la nueva Inicio. Consecuencia: la exportación de copias sigue pendiente. Se mantiene el aviso discreto en Inicio y la Fase 2 queda como siguiente recomendada.
 
 ## ADR-017 · Umbrales del recomendador · Aceptada (2026-10-12, revisable con datos reales)
@@ -102,6 +102,27 @@ Iván prioriza el recomendador y la nueva Inicio. Consecuencia: la exportación 
 ## ADR-019 · Propuesta del día estable · Aceptada (2026-10-12)
 - Se elige de forma determinista entre las 3 mejores y se fija en cuanto se muestra.
 - Sin esto, guardarla cambiaba el ranking y la propuesta saltaba a otra (detectado en las pruebas).
+
+## ADR-020 · Copias de seguridad antes que el recomendador, sobre v0.1.1 · Aceptada (2026-10-12)
+- La exportación tiene que existir en el móvil **antes** de instalar una versión con más cambios.
+- Por eso la rama `fase-2-copias` sale de `main` (v0.1.1) y se publica como v0.1.2.
+- La integración con la Fase 3 se hace en una rama aparte con un commit de merge, sin reescribir nada.
+
+## ADR-021 · Formato de copia v1 y reglas de restauración · Aceptada (2026-10-12)
+- ZIP con `manifest.json` comprimido y fotos sin recomprimir (fflate).
+- Cada foto lleva su SHA-256 calculado al exportar.
+- Se valida todo antes de escribir. Lo inválido se aparta con su motivo y el resto se puede restaurar.
+- Fusionar es la opción por defecto:
+  - el mismo ID con contenido distinto conserva lo del dispositivo salvo elección explícita;
+  - otro ID con una foto idéntica se trata como posible duplicado y no se importa por defecto.
+- «Reemplazar todo» exige escribir `REEMPLAZAR`.
+- Una única transacción garantiza que la restauración se aplica entera o no se aplica.
+- No se exportan los ajustes del dispositivo.
+
+## ADR-022 · Lectura completa en memoria al restaurar · Aceptada con límite (2026-10-12)
+- Para garantizar «todo o nada», la copia se valida entera y se escribe en una sola transacción.
+- Con la copia típica de un armario personal (decenas de MB) es asumible.
+- Para copias muy grandes, la alternativa es escribir por lotes con limpieza compensatoria. Se revisará si aparece un problema real de memoria.
 
 ## Pendientes
 - Revalidar la v0.1.1 en Android y confirmar o descartar las hipótesis de la incidencia del 2026-10-11 (`TESTING.md`).

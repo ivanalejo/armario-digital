@@ -16,6 +16,7 @@ import { OutfitCard } from '../outfits/OutfitCard';
 import { useRecommendations, useWardrobeData } from '../outfits/useWardrobeData';
 import { setCatalogFilter } from '../wardrobe/filterStore';
 import { localDate } from '../../db/outfits';
+import { BackupReminder } from '../backup/BackupPanel';
 
 const today = () =>
   new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, (c) => c.toUpperCase());
@@ -129,10 +130,8 @@ export function HomePage() {
         </section>
       )}
 
-      <p className="backup-line">
-        <Icon name="shield" size={16} /> Sin copia de seguridad todavía: tus prendas solo están en este navegador.
-        {storage?.persisted === false && ' Almacenamiento persistente no concedido.'}
-      </p>
+      <BackupReminder />
+      {storage?.persisted === false && <p className="backup-line">Almacenamiento persistente no concedido (ver Ajustes).</p>}
     </div>
   );
 }

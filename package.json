@@ -1,7 +1,7 @@
 {
   "name": "armario-digital",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "PWA personal de armario digital. Datos 100 % locales.",
   "license": "MIT",
@@ -20,6 +20,7 @@
   "dependencies": {
     "dexie": "^4.4.6",
     "dexie-react-hooks": "^4.4.0",
+    "fflate": "^0.8.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-easy-crop": "^6.2.4",

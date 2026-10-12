@@ -18,6 +18,7 @@ export function NotEnough({ result, items }: { result: RecommendResult; items: r
         <h2>Tu armario aún está vacío</h2>
         <p>Añade al menos una parte de arriba, una de abajo y un calzado, y te propondré conjuntos con lo que ya tienes.</p>
         <Link href="/nueva" className="btn">Añadir prenda</Link>
+        <Link href="/copias/restaurar" className="btn btn--ghost" data-testid="empty-restore">¿Móvil nuevo? Restaurar una copia</Link>
       </div>
     );
   }

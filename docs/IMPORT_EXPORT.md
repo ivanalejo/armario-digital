@@ -1,6 +1,8 @@
 # Importación y exportación
 
-Formato: **paquete Armario** · `formatVersion: 1` · `schemaVersion: 1` · Estado: aprobado (Fase 0, ampliado 2026-10-11)
+Formato: **paquete Armario** · `formatVersion: 1` · `schemaVersion: 1` · Estado: **copias de seguridad implementadas en v0.1.2** (`kind: backup`); lotes y kit de catalogación (`batch`, `patch`) pendientes.
+
+> Lo implementado y su procedimiento exacto están en **§8 Copias de seguridad**. Las secciones 1–7 describen el formato completo, incluido lo que aún no está implementado.
 
 Un único formato sirve para tres usos, distinguidos por `kind`:
 
@@ -10,19 +12,21 @@ Un único formato sirve para tres usos, distinguidos por `kind`:
 | `batch` | Claude (o un script) | Prendas nuevas con sus imágenes | Alta de prendas catalogadas fuera de la app |
 | `patch` | Claude | Solo metadatos de prendas **que ya existen** en la app, sin imágenes | Completar borradores catalogados con el kit (flujo recomendado) |
 
-Extensión: `.armario.zip` (p. ej. `armario-backup-2026-10-11.armario.zip`). Un `patch` puede ser también un `.json` suelto.
+Extensión: `.armario.zip` (la app genera `armario-copia-AAAA-MM-DD-HHMM.armario.zip`). Un `patch` puede ser también un `.json` suelto.
 
 ## 1. Estructura del ZIP
 
 ```
 armario-backup-2026-10-11.armario.zip
-├─ manifest.json            # siempre en la raíz
+├─ manifest.json            # siempre en la raíz (comprimido)
+├─ README.txt               # explicación para personas (la app lo ignora)
 ├─ images/
 │  ├─ img_01jae4….webp      # variante display (obligatoria si hay imágenes)
 │  └─ …
-└─ thumbs/                  # solo en backups; si falta, la app las regenera
-   ├─ img_01jae4….webp
-   └─ …
+├─ thumbs/                  # miniaturas; si falta una, se usa la foto completa
+│  ├─ img_01jae4….webp
+│  └─ …
+└─ originals/               # solo si algún día se activa «conservar originales»
 ```
 
 - Rutas relativas, separador `/`, sin `..`, sin rutas absolutas, solo `[a-z0-9_.-]`.
@@ -45,7 +49,7 @@ armario-backup-2026-10-11.armario.zip
 | `batch` | En `batch`/`patch` | `{ id, label?, notes?, pendingImages?: [{ sourceName, reason }] }` |
 | `counts` | Sí | `{ items, images, outfits?, wearLog? }` (comprobación de integridad) |
 | `items` | Sí | Fichas según `DATA_MODEL.md §3.1` |
-| `images` | Sí (puede ser `[]`) | Metadatos + `path` (y `thumbPath` en backups) |
+| `images` | Sí (puede ser `[]`) | Metadatos + `path` y `displaySha256` (y `thumbPath`/`thumbSha256`, `originalPath`/`originalSha256` en backups) |
 | `outfits`, `wearLog`, `feedback`, `kits`, `vocab`, `settings` | Solo `backup` | `feedback` = registro completo de valoraciones (el modelo de preferencias se recalcula al restaurar) |
 | `kitId` | Solo `patch` de kit | Kit al que responde el patch (§4) |
 
@@ -137,10 +141,10 @@ Reglas por tipo:
     }
   ],
   "images": [
-    { "id": "img_01jae4k9a0b1c2d3e4f5g6h7j8", "itemId": "itm_01jae4k8d2x7q9m3v5t1b6c0wz", "path": "images/img_01jae4k9a0b1c2d3e4f5g6h7j8.webp", "thumbPath": "thumbs/img_01jae4k9a0b1c2d3e4f5g6h7j8.webp", "mime": "image/webp", "width": 1200, "height": 1600, "bytes": 241873, "sha256": "9f2c…(64 hex)…", "createdAt": "2026-10-05T17:12:00Z" },
-    { "id": "img_01jae4k9q1r2s3t4v5w6x7y8z9", "itemId": "itm_01jae4k8d2x7q9m3v5t1b6c0wz", "path": "images/img_01jae4k9q1r2s3t4v5w6x7y8z9.webp", "thumbPath": "thumbs/img_01jae4k9q1r2s3t4v5w6x7y8z9.webp", "mime": "image/webp", "width": 1200, "height": 1600, "bytes": 198442, "sha256": "41ab…", "createdAt": "2026-10-05T17:12:00Z" },
-    { "id": "img_c20261005a_02_1", "itemId": "itm_c20261005a_02", "path": "images/img_c20261005a_02_1.webp", "thumbPath": "thumbs/img_c20261005a_02_1.webp", "mime": "image/webp", "width": 1200, "height": 1600, "bytes": 176120, "sha256": "c07d…", "createdAt": "2026-10-05T17:12:00Z", "source": { "name": "IMG_20261005_181455.jpg" } },
-    { "id": "img_01jaf0n1c3d5f7h9k1m3p5r7t9", "itemId": "itm_01jaf0mzt8e4g6h2k9p3r5s7v1", "path": "images/img_01jaf0n1c3d5f7h9k1m3p5r7t9.webp", "thumbPath": "thumbs/img_01jaf0n1c3d5f7h9k1m3p5r7t9.webp", "mime": "image/webp", "width": 1600, "height": 1200, "bytes": 211907, "sha256": "e5f1…", "createdAt": "2026-10-08T10:03:00Z" }
+    { "id": "img_01jae4k9a0b1c2d3e4f5g6h7j8", "itemId": "itm_01jae4k8d2x7q9m3v5t1b6c0wz", "path": "images/img_01jae4k9a0b1c2d3e4f5g6h7j8.webp", "thumbPath": "thumbs/img_01jae4k9a0b1c2d3e4f5g6h7j8.webp", "displaySha256": "…", "thumbSha256": "…", "mime": "image/webp", "width": 1200, "height": 1600, "bytes": 241873, "sha256": "9f2c…(64 hex)…", "createdAt": "2026-10-05T17:12:00Z" },
+    { "id": "img_01jae4k9q1r2s3t4v5w6x7y8z9", "itemId": "itm_01jae4k8d2x7q9m3v5t1b6c0wz", "path": "images/img_01jae4k9q1r2s3t4v5w6x7y8z9.webp", "thumbPath": "thumbs/img_01jae4k9q1r2s3t4v5w6x7y8z9.webp", "displaySha256": "…", "thumbSha256": "…", "mime": "image/webp", "width": 1200, "height": 1600, "bytes": 198442, "sha256": "41ab…", "createdAt": "2026-10-05T17:12:00Z" },
+    { "id": "img_c20261005a_02_1", "itemId": "itm_c20261005a_02", "path": "images/img_c20261005a_02_1.webp", "thumbPath": "thumbs/img_c20261005a_02_1.webp", "displaySha256": "…", "thumbSha256": "…", "mime": "image/webp", "width": 1200, "height": 1600, "bytes": 176120, "sha256": "c07d…", "createdAt": "2026-10-05T17:12:00Z", "source": { "name": "IMG_20261005_181455.jpg" } },
+    { "id": "img_01jaf0n1c3d5f7h9k1m3p5r7t9", "itemId": "itm_01jaf0mzt8e4g6h2k9p3r5s7v1", "path": "images/img_01jaf0n1c3d5f7h9k1m3p5r7t9.webp", "thumbPath": "thumbs/img_01jaf0n1c3d5f7h9k1m3p5r7t9.webp", "displaySha256": "…", "thumbSha256": "…", "mime": "image/webp", "width": 1600, "height": 1200, "bytes": 211907, "sha256": "e5f1…", "createdAt": "2026-10-08T10:03:00Z" }
   ],
   "outfits": [
     {
@@ -301,6 +305,8 @@ Cada error indica **dónde** y **qué hacer**:
 
 ## 6. Exportación (backup)
 
+> Implementado en v0.1.2 tal como se describe en §8; lo que sigue es el diseño original.
+
 - Se genera en streaming (fflate) con todas las entidades y las variantes `display` + `thumb`.
 - Tamaño orientativo: ~0,25 MB por foto → 300 prendas con 2 fotos ≈ 150 MB.
 - Entrega: Web Share (`navigator.share({ files })`) para mandarlo a Drive/Archivos, o descarga directa como alternativa.
@@ -312,3 +318,83 @@ Cada error indica **dónde** y **qué hacer**:
 - `formatVersion` cambia si cambia la estructura del paquete (rutas, cabecera). `schemaVersion` cambia con el modelo.
 - La app **lee** todas las versiones anteriores (migraciones encadenadas) y **escribe** siempre la actual.
 - Fixtures de cada versión publicada se guardan en `tests/fixtures/packages/` (sintéticos) para que los tests garanticen la compatibilidad hacia atrás.
+
+## 8. Copias de seguridad (implementado en v0.1.2)
+
+### 8.1 Qué incluye y qué no
+
+| Incluido | No incluido (a propósito) |
+|---|---|
+| Todas las fichas, también las que no validan (tal cual, con aviso) | Ajustes del dispositivo (permiso de almacenamiento, fecha de la última copia…) |
+| Fotos: `display`, miniatura y original si existiera, **con los mismos bytes** guardados en el móvil | Registro de errores del diagnóstico |
+| Conjuntos guardados, historial de uso, valoraciones y descartes, kits y vocabulario propio | — |
+
+Las fotos se leen como estén guardadas, tal como hace el código real: `ArrayBuffer + type` (v0.1.1 en adelante) o `Blob` (registros de v0.1.0). Al restaurarlas se guardan siempre en el formato actual.
+
+### 8.2 Manifiesto de una copia
+
+```
+{ format: "armario-digital", formatVersion: 1, schemaVersion: 1, kind: "backup",
+  createdAt, generator: { name: "armario-app", version: "0.1.2" },
+  counts: { items, images, outfits, wearLog, feedback, kits, vocab },
+  items[], images[], outfits[], wearLog[], feedback[], kits[], vocab[] }
+```
+
+Cada entrada de `images[]` es el registro de la base de datos más `path` + `displaySha256` y, si existen, `thumbPath` + `thumbSha256` y `originalPath` + `originalSha256`. Las huellas SHA-256 se calculan al exportar sobre los bytes reales.
+
+### 8.3 Comprobaciones al restaurar (antes de escribir nada)
+
+| Comprobación | Resultado si falla |
+|---|---|
+| Es un ZIP, no está truncado y no tiene rutas con `..` ni absolutas | **Se rechaza** el archivo entero |
+| `manifest.json` en la raíz, JSON válido, `format = armario-digital` | **Se rechaza** (detecta también «has comprimido la carpeta») |
+| `formatVersion` y `schemaVersion` no son más nuevos que los de la app | **Se rechaza**: «Actualiza la app» |
+| `kind = backup` | **Se rechaza**: los lotes y el kit aún no se importan |
+| `counts` coincide con el contenido | **Se rechaza**: copia incompleta o manipulada |
+| Límites: archivo ≤ 1 GB, manifiesto ≤ 20 MB, foto ≤ 20 MB, ≤ 20 000 archivos | **Se rechaza** |
+| Cada foto: archivo presente, formato real (WebP/JPEG/PNG por cabecera) y SHA-256 correcto | Esa foto se aparta; la prenda se importa sin ella (aviso) |
+| Cada ficha, conjunto, uso, valoración…: validación con el esquema | Ese registro se aparta con su motivo; el resto se puede importar |
+| IDs repetidos dentro de la copia | Se usa el primero (aviso) |
+| Archivos del ZIP no referenciados | Se ignoran (aviso) |
+
+### 8.4 Reglas al restaurar sobre datos existentes
+
+Modo por defecto: **añadir a lo que tengo**. Nada existente se sobrescribe sin una elección explícita.
+
+| Situación | Por defecto | Opción |
+|---|---|---|
+| Prenda nueva (ID que no existe) | Se añade | — |
+| Mismo ID y mismo contenido y fotos | Se omite («ya está») | — |
+| Mismo ID con contenido distinto | **Se conserva la del dispositivo** | Marcar «usar la versión de la copia» (sustituye ficha y fotos, sin dejar restos) |
+| Otro ID pero una foto idéntica a una existente | **No se importa** (posible duplicado) | Marcar «importar igualmente» |
+| Una foto de la copia con el ID de una foto de **otra** prenda del dispositivo | No se importa | — |
+| Conjuntos, usos, valoraciones con el mismo ID | Se conserva el del dispositivo | — |
+
+Modo **reemplazar todo**: vacía prendas, fotos, conjuntos, historial, valoraciones, kits y vocabulario, y deja exactamente la copia. Exige escribir `REEMPLAZAR`, y la pantalla ofrece hacer antes una copia de lo actual.
+
+Todo se aplica en **una sola transacción** con tiempo límite proporcional al tamaño (mínimo 30 s): si algo falla (espacio, cierre de la app…), no cambia nada. Al terminar se ejecuta la comprobación de coherencia del diagnóstico.
+
+### 8.5 Restaurar en un dispositivo nuevo
+
+1. En el móvil antiguo: Ajustes → **Crear copia de seguridad**. El archivo se descarga a *Descargas*; súbelo a Drive o pásalo al ordenador.
+2. En el dispositivo nuevo: abre `https://ivanalejo.github.io/armario-digital/` en Chrome e instala la app.
+3. Ajustes → **Restaurar o importar una copia** (o Armario vacío → «Restaurar una copia») → elige el `.armario.zip` desde Drive o *Descargas*.
+4. Revisa el resumen: todo aparecerá como «Nuevas» → **Restaurar**.
+5. Comprueba Ajustes → Diagnóstico → coherencia correcta, y crea una copia nueva desde el dispositivo nuevo.
+
+### 8.6 Copias de versiones anteriores
+
+- **Lectura hacia atrás:** la app lee cualquier copia con `formatVersion` y `schemaVersion` iguales o anteriores a los suyos. Las anteriores pasan por `upgradeManifest()` (`src/transfer/format.ts`), una cadena de migraciones n → n+1.
+- **Hoy solo existe la v1.** No hay copias anteriores: la exportación no existía antes de v0.1.2.
+- **Al cambiar el formato o el esquema:**
+  1. Subir la versión.
+  2. Añadir la migración desde la anterior.
+  3. Guardar una copia sintética de la versión vieja en `tests/fixtures/packages/` con un test que la restaure.
+- **Cambios compatibles** (campos opcionales nuevos, como los de los conjuntos en v0.2.0/0.3.0) no suben la versión. Una copia antigua sin esos campos sigue siendo válida.
+- **Copias más nuevas que la app:** se rechazan con «Actualiza la app». Nunca se importan a medias. Una copia con campos que la app aún no conoce (por ejemplo, conjuntos valorados en 0.3.0 importados en 0.1.2) aparta esos registros y los indica; la solución es restaurar en la versión igual o posterior.
+
+### 8.7 Límites conocidos
+
+- La copia se lee entera en memoria al restaurar. Con un armario muy grande (cientos de fotos, más de 300 MB) podría faltar memoria en un móvil modesto. Está pendiente de medir con datos reales.
+- La app no puede saber si guardaste el archivo fuera del móvil. Por eso dice «copia **generada**», nunca «respaldado».
+- En Android, «Compartir» solo aparece si Chrome admite compartir archivos ZIP; si no, la descarga directa a *Descargas* siempre está disponible.

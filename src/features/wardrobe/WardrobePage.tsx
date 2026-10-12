@@ -170,6 +170,7 @@ export function WardrobePage() {
           <Icon name="hanger" size={48} />
           <p>Tu armario está vacío.</p>
           <Link href="/nueva" className="btn">Añadir la primera prenda</Link>
+          <Link href="/copias/restaurar" className="btn btn--ghost">Restaurar una copia</Link>
         </div>
       ) : (
         <>

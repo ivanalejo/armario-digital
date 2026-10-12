@@ -1,5 +1,14 @@
 # Cambios
 
+## 0.3.0 · 2026-10-12 · Recomendador + copias de seguridad
+
+Integra la Fase 3 (0.2.0, nunca publicada por separado) con las copias de seguridad (0.1.2).
+
+- Las copias incluyen los conjuntos con sus campos nuevos (`key`, `rating`, `weather`) y los eventos de preferencias (`feedback`).
+- Inicio usa el aviso de copias de la 0.1.2 en lugar del texto fijo «Sin copia de seguridad todavía».
+- Si el armario está vacío, Inicio ofrece restaurar una copia (móvil nuevo).
+- Sin migración de datos: abre igual los datos de v0.1.0, v0.1.1 y v0.1.2.
+
 ## 0.2.0 · 2026-10-12 · Fase 3: recomendador de outfits
 
 - **Inicio** pasa a ser un panel para vestirse:
@@ -20,6 +29,20 @@
 - **Datos:** sin migración. Los conjuntos guardados añaden campos opcionales (`key`, `rating`, `weather`). Valoraciones, descartes, usos y cambios se guardan como eventos para el aprendizaje futuro.
 - **Corrección:** en el catálogo, la foto tapaba el nombre de la prenda (fallo presente desde la v0.1.1).
 - **Pruebas:** 103 tests unitarios y de integración, y 24 e2e.
+
+
+## 0.1.2 · 2026-10-12 · Fase 2a: copias de seguridad
+
+- **Crear copia** (Ajustes): un archivo `.armario.zip` con todas las prendas, fotos (bytes exactos), conjuntos, historial y valoraciones. Se descarga a *Descargas* y nunca sale del dispositivo por sí solo.
+- **Restaurar copia:**
+  - Se comprueba entera antes de escribir nada, con mensajes claros si está dañada o es de una versión más nueva.
+  - Resumen de lo nuevo, lo que ya está, lo modificado y los posibles duplicados.
+  - Nada existente se sobrescribe sin marcarlo.
+  - «Reemplazar todo» exige escribir REEMPLAZAR.
+  - Se aplica entera o no se aplica.
+- Inicio avisa si no hay copia o hay cambios sin copiar. Si el Armario está vacío, ofrece restaurar (móvil nuevo).
+- Lee las fotos tal como las guardan v0.1.0 (Blob) y v0.1.1 (ArrayBuffer).
+- Pruebas: 19 unitarias y 4 e2e nuevas.
 
 
 ## 0.1.1 · 2026-10-11 · Corrección del bloqueo en Android
