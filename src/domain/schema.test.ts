@@ -1,13 +1,11 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { docBackupExample } from '../test/docExamples';
 import { ImageMetaSchema, ItemSchema, formatIssues } from './schema';
 import { resolveColor, cutAttrsFor } from './vocabulary';
 
 // Los ejemplos JSON de la documentación deben validar contra el código:
 // así documento y esquema no pueden divergir sin que falle un test.
-const doc = readFileSync(new URL('../../docs/IMPORT_EXPORT.md', import.meta.url), 'utf8');
-const blocks = [...doc.matchAll(/```json\n([\s\S]*?)```/g)].map((m) => JSON.parse(m[1]!));
-const backup = blocks.find((b) => b.kind === 'backup');
+const backup = docBackupExample();
 
 const base = {
   id: 'itm_01jae4k8d2x7q9m3v5t1b6c0wz',
@@ -40,7 +38,7 @@ describe('ejemplos de la documentación', () => {
     }
   });
   it('cada imageId de las prendas existe en images', () => {
-    const ids = new Set(backup.images.map((i: { id: string }) => i.id));
+    const ids = new Set(backup.images.map((i) => i.id));
     for (const it of backup.items) for (const id of it.imageIds) expect(ids.has(id)).toBe(true);
   });
 });

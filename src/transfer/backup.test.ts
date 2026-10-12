@@ -5,6 +5,7 @@ import { dismissOutfit, logWear, rateOutfit, recordSwap, saveOutfit } from '../d
 import { getSetting } from '../db/settings';
 import type { BlobRecord, Item } from '../domain/schema';
 import { exportBackup, type LastExport } from './exportBackup';
+import { docBackupExample } from '../test/docExamples';
 import { canonical } from './format';
 import { applyImport, ImportError, planImport, REPLACE_WORD } from './importBackup';
 import { readBackup, type ReadResult } from './readBackup';
@@ -381,10 +382,9 @@ describe('compatibilidad de versiones del formato', () => {
   });
 
   it('las fotos del ejemplo de la documentación cumplen el esquema de copia', async () => {
-    const { readFileSync } = await import('node:fs');
     const { BackupImageSchema } = await import('./format');
-    const doc = readFileSync(new URL('../../docs/IMPORT_EXPORT.md', import.meta.url), 'utf8');
-    const example = [...doc.matchAll(/```json\n([\s\S]*?)```/g)].map((m) => JSON.parse(m[1]!)).find((b) => b.kind === 'backup');
+    const example = docBackupExample();
+    expect(example.images.length).toBeGreaterThan(0);
     for (const img of example.images) {
       const fixed = { ...img, sha256: 'a'.repeat(64), displaySha256: 'b'.repeat(64), thumbSha256: 'c'.repeat(64) };
       expect(BackupImageSchema.safeParse(fixed).success).toBe(true);
