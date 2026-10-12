@@ -1,0 +1,8 @@
+# Fin de línea LF en el repositorio y en todas las copias de trabajo, también en
+# Windows (evita CRLF en scripts, hooks y documentos que leen los tests).
+* text=auto eol=lf
+
+# Binarios: nunca convertir.
+*.png binary
+*.ico binary
+*.woff2 binary
