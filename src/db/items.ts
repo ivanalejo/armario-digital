@@ -49,7 +49,7 @@ function toDbError(err: unknown, action: string): Error {
 }
 
 /** Transacción de escritura con tiempo límite. Si vence, se aborta para liberar el bloqueo. */
-async function writeTx<T>(
+export async function writeTx<T>(
   database: ArmarioDB,
   tables: Dexie.Table[],
   action: string,
