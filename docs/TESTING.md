@@ -78,6 +78,9 @@ Datos de prueba siempre **sintéticos**: las imágenes se generan en el propio t
 | 2026-10-12 | 2a | Prueba de mutación: se desactivan a propósito la verificación SHA-256 y la detección de duplicados | ✅ los tests correspondientes fallan (no pasan en falso) |
 | 2026-10-12 | 2a | **v0.1.2** lint + build + check-dist + guard | ✅ |
 | 2026-10-12 | 2a | **v0.1.2** `npm run e2e`: 16 tests (12 anteriores + 4 de copias) | ✅ 16/16 |
+| 2026-10-12 | 2a+3 | **v0.3.0** (integración) `npm test`: 123 tests en 10 archivos (incluye ida y vuelta de conjuntos v0.2.0 y eventos de preferencias) | ✅ 123/123 |
+| 2026-10-12 | 2a+3 | **v0.3.0** tsc + lint + build + check-dist (637 KB) + guard | ✅ |
+| 2026-10-12 | 2a+3 | **v0.3.0** `npm run e2e`: 29 tests (24 de v0.2.0 + 5 de copias), dos ejecuciones seguidas | ✅ 29/29 y 29/29 |
 
 Entorno: Linux, Node 22, Chromium 153 headless. Playwright no pudo descargar su navegador en el entorno de desarrollo; se usó un Chromium empaquetado mediante `CHROMIUM_PATH`. En la CI de GitHub se instala el de Playwright.
 
@@ -172,6 +175,7 @@ Entorno: Linux, Node 22, Chromium 153 headless. Playwright no pudo descargar su 
 - Fallo a mitad → nada cambia.
 - Archivos dañados o incompatibles: vacío, no ZIP, truncado, sin manifiesto, carpeta comprimida, JSON roto, otra app, formato o esquema futuro, lote en vez de copia, recuentos manipulados, ruta peligrosa, foto ausente, alterada o que no es imagen, ficha inválida, IDs repetidos, miniatura ausente y archivos extra.
 - Copia v1 congelada (`src/test/fixtures/backupV1.ts`), que deberán seguir restaurando las versiones futuras.
+- v0.3.0: conjuntos con `key`, `rating` y `weather`, historial y eventos de `feedback` escritos con las funciones reales de la app viajan sin cambios y no se duplican al repetir (unitario). E2E: guardar, valorar y «me lo pongo» → copia → restaurar en un perfil nuevo desde el estado vacío de Inicio → Guardados, estrellas e Historial iguales y el recomendador funciona.
 - E2E: exportar desde la interfaz (descarga real) y restaurar en un **perfil de navegador nuevo** (dispositivo limpio) con datos en formato v0.1.0/v0.1.1. Las fotos se ven, la repetición no duplica, conflicto con elección explícita, «reemplazar todo», archivos dañados y **ninguna petición fuera del propio origen**.
 
 **E2E** (`e2e/app.spec.ts`):
