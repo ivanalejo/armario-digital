@@ -34,7 +34,7 @@ describe('ejemplos de la documentación', () => {
     for (const item of backup.items) expect(errors(item)).toEqual([]);
   });
   it('las imágenes del ejemplo tienen metadatos válidos salvo el hash abreviado', () => {
-    for (const { path: _p, thumbPath: _t, ...img } of backup.images) {
+    for (const { path: _p, thumbPath: _t, displaySha256: _d, thumbSha256: _ts, ...img } of backup.images) {
       const r = ImageMetaSchema.safeParse({ ...img, sha256: 'a'.repeat(64) });
       expect(r.success, JSON.stringify(r.error?.issues)).toBe(true);
     }

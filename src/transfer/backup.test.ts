@@ -331,3 +331,28 @@ describe('archivos corruptos o incompatibles', () => {
     expect(canonical(Array.from(img.thumb.bytes))).toBe(canonical(Array.from(img.display.bytes)));
   });
 });
+
+describe('compatibilidad de versiones del formato', () => {
+  it('la copia v1 congelada (Armario 0.1.2) se sigue restaurando completa', async () => {
+    const { BACKUP_V1_FILES, BACKUP_V1_MANIFEST } = await import('../test/fixtures/backupV1');
+    const files: Record<string, Uint8Array> = { 'manifest.json': strToU8(JSON.stringify(BACKUP_V1_MANIFEST)) };
+    for (const [path, b64] of Object.entries(BACKUP_V1_FILES)) files[path] = Uint8Array.from(Buffer.from(b64, 'base64'));
+    const r = ok(await readBackup(new Blob([zipSync(files) as BlobPart])));
+    expect(r.problems).toEqual([]);
+    const d = await newDb();
+    const report = await applyImport(await planImport(r.backup, d), { mode: 'merge' }, d);
+    expect(report).toMatchObject({ added: 3, others: { outfits: 1, wearLog: 1 } });
+    expect(report.consistency.issues).toEqual([]);
+  });
+
+  it('las fotos del ejemplo de la documentación cumplen el esquema de copia', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { BackupImageSchema } = await import('./format');
+    const doc = readFileSync(new URL('../../docs/IMPORT_EXPORT.md', import.meta.url), 'utf8');
+    const example = [...doc.matchAll(/```json\n([\s\S]*?)```/g)].map((m) => JSON.parse(m[1]!)).find((b) => b.kind === 'backup');
+    for (const img of example.images) {
+      const fixed = { ...img, sha256: 'a'.repeat(64), displaySha256: 'b'.repeat(64), thumbSha256: 'c'.repeat(64) };
+      expect(BackupImageSchema.safeParse(fixed).success).toBe(true);
+    }
+  });
+});

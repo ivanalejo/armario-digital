@@ -1,5 +1,19 @@
 # Cambios
 
+## 0.1.2 · 2026-10-12 · Fase 2a: copias de seguridad
+
+- **Crear copia** (Ajustes): un archivo `.armario.zip` con todas las prendas, fotos (bytes exactos), conjuntos, historial y valoraciones. Se descarga a *Descargas* y nunca sale del dispositivo por sí solo.
+- **Restaurar copia:**
+  - Se comprueba entera antes de escribir nada, con mensajes claros si está dañada o es de una versión más nueva.
+  - Resumen de lo nuevo, lo que ya está, lo modificado y los posibles duplicados.
+  - Nada existente se sobrescribe sin marcarlo.
+  - «Reemplazar todo» exige escribir REEMPLAZAR.
+  - Se aplica entera o no se aplica.
+- Inicio avisa si no hay copia o hay cambios sin copiar. Si el Armario está vacío, ofrece restaurar (móvil nuevo).
+- Lee las fotos tal como las guardan v0.1.0 (Blob) y v0.1.1 (ArrayBuffer).
+- Pruebas: 19 unitarias y 4 e2e nuevas.
+
+
 ## 0.1.1 · 2026-10-11 · Corrección del bloqueo en Android
 
 Problema observado en la v0.1.0 en Android:

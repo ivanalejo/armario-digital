@@ -67,6 +67,11 @@ Datos de prueba siempre **sintéticos**: las imágenes se generan en el propio t
 | 2026-10-11 | 1 | **v0.1.1** `npm test`: 61 tests en 7 archivos | ✅ 61/61 |
 | 2026-10-11 | 1 | **v0.1.1** lint + build + check-dist | ✅ |
 | 2026-10-11 | 1 | **v0.1.1** `npm run e2e`: 12 tests (4 originales + 8 de robustez) | ✅ 12/12 |
+| 2026-10-12 | 1 | **Android real (Iván), v0.1.1**: carga, guardado y navegación | ✅ según Iván |
+| 2026-10-12 | 2a | **v0.1.2** `npm test`: 80 tests en 8 archivos (19 de copias) | ✅ 80/80 |
+| 2026-10-12 | 2a | Prueba de mutación: se desactivan a propósito la verificación SHA-256 y la detección de duplicados | ✅ los tests correspondientes fallan (no pasan en falso) |
+| 2026-10-12 | 2a | **v0.1.2** lint + build + check-dist + guard | ✅ |
+| 2026-10-12 | 2a | **v0.1.2** `npm run e2e`: 16 tests (12 anteriores + 4 de copias) | ✅ 16/16 |
 
 Entorno: Linux, Node 22, Chromium 153 headless. Playwright no pudo descargar su navegador en el entorno de desarrollo; se usó un Chromium empaquetado mediante `CHROMIUM_PATH`. En la CI de GitHub se instala el de Playwright.
 
@@ -102,6 +107,19 @@ Entorno: Linux, Node 22, Chromium 153 headless. Playwright no pudo descargar su 
 - Persistencia y coherencia tras **cerrar el navegador por completo** y reabrirlo (perfil persistente).
 - Fichas inválidas que no bloquean el resto y detección de incoherencias sin modificar nada.
 
+**Copias de seguridad** (`src/transfer/backup.test.ts`, `e2e/backup.spec.ts`, v0.1.2):
+- Ida y vuelta a un dispositivo vacío con fichas, metadatos, **bytes de cada foto** (incluida una guardada como Blob en v0.1.0), conjuntos e historial idénticos.
+- Exportar no modifica nada.
+- Restaurar dos veces no duplica.
+- Conflictos: por defecto se conserva lo del dispositivo; la versión de la copia sustituye ficha y fotos sin dejar restos.
+- Posibles duplicados por foto idéntica.
+- Fusionar sin tocar lo exclusivo del dispositivo.
+- «Reemplazar todo» exige confirmación.
+- Fallo a mitad → nada cambia.
+- Archivos dañados o incompatibles: vacío, no ZIP, truncado, sin manifiesto, carpeta comprimida, JSON roto, otra app, formato o esquema futuro, lote en vez de copia, recuentos manipulados, ruta peligrosa, foto ausente, alterada o que no es imagen, ficha inválida, IDs repetidos, miniatura ausente y archivos extra.
+- Copia v1 congelada (`src/test/fixtures/backupV1.ts`), que deberán seguir restaurando las versiones futuras.
+- E2E: exportar desde la interfaz (descarga real) y restaurar en un **perfil de navegador nuevo** (dispositivo limpio) con datos en formato v0.1.0/v0.1.1. Las fotos se ven, la repetición no duplica, conflicto con elección explícita, «reemplazar todo», archivos dañados y **ninguna petición fuera del propio origen**.
+
 **E2E** (`e2e/app.spec.ts`):
 - Alta desde la galería con un JPEG de 2400×3200 con EXIF+GPS. Se guarda como WebP de 1600 px sin `Exif` ni marca GPS en los binarios, con la huella del original.
 - Recarga, búsqueda por alias, edición con segunda foto (2 imágenes y 4 binarios) y borrado (0 restos).
@@ -120,6 +138,17 @@ Entorno: Linux, Node 22, Chromium 153 headless. Playwright no pudo descargar su 
 3. **En el móvil:** conecta el Android por USB, abre `chrome://inspect` en el PC y repite el paso 2 sobre la PWA instalada.
 4. **Modo avión:** con la app ya cargada una vez, activa el modo avión. Todo (alta con cámara, edición, búsqueda) debe seguir funcionando.
 5. **CSP:** en la consola de DevTools, `fetch('https://example.com')` debe fallar con un error de *Content Security Policy*.
+
+## Copia y restauración: comprobación antes de actualizar (v0.1.2)
+
+Haz esto con la v0.1.2 publicada y **antes** de instalar cualquier versión posterior.
+
+1. Ajustes → debe poner **0.1.2**. Diagnóstico → coherencia correcta.
+2. Ajustes → **Crear copia de seguridad**. Se descarga `armario-copia-….armario.zip` a *Descargas*; anota el número de prendas y fotos que indica.
+3. Súbela a Drive o pásala al ordenador. Desde ese momento es tu copia fuera del móvil.
+4. **Prueba de restauración sin tocar el móvil:** en el ordenador, abre `https://ivanalejo.github.io/armario-digital/` en una **ventana de incógnito** (o un perfil de Chrome nuevo). Ajustes → Restaurar copia → elige el archivo → debe indicar *Nuevas = tu número de prendas* → Restaurar → «coherencia: correcta» → mira en Armario que aparecen todas con sus fotos. Al cerrar la ventana de incógnito, esos datos desaparecen; tu móvil no se ha tocado.
+5. En el móvil: Ajustes → Restaurar copia → elige la misma copia → debe indicar *Ya están = todas, Nuevas = 0*, con el botón desactivado. Confirma que no duplica nada. **No pulses «Reemplazar todo».**
+6. Solo entonces, actualiza a la versión siguiente.
 
 ## Checklist en Android (pendiente: lo tienes que hacer tú tras publicar)
 

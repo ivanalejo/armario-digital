@@ -4,7 +4,8 @@
 |---|---|
 | 0 · Diseño técnico | ✅ Aprobada (2026-10-11), ampliada con cortes/siluetas y personalización |
 | 1 · MVP de inventario | 🔧 v0.1.1: corregido el bloqueo visto en Android (v0.1.0) · ⏳ pendiente de revalidar en Android |
-| 2 · Lotes, kit de catalogación y copias | ⬜ |
+| 2 · Copias de seguridad (2a) | 🔧 v0.1.2: implementadas y probadas en navegador · ⏳ prueba en Android |
+| 2b · Lotes y kit de catalogación | ⬜ |
 | 3 · Recomendador | ⬜ |
 | 4 · PWA y robustez | ⬜ |
 | 5 · Personalización progresiva | ⬜ |
@@ -38,6 +39,15 @@ Criterios de aceptación (✅ verificado · ⏳ pendiente; detalle en `TESTING.m
 11. ✅ Protección del repositorio: el hook bloquea (probado), `guard` y `check-dist` corren en la CI.
 
 ## Fase 2 · Lotes, kit de catalogación y copias
+
+> **Dividida (2026-10-12):** las copias de seguridad (2a) se adelantan como v0.1.2 sobre la v0.1.1, para poder hacer una copia del móvil **antes** de instalar el recomendador. Los lotes y el kit (2b) quedan pendientes.
+
+Estado de 2a (v0.1.2), con los criterios 5, 6, 8 y 9 de la lista de abajo:
+- ✅ 5. Exportación `.armario.zip` completa: fichas, fotos con sus bytes exactos, conjuntos, historial, valoraciones, kits y vocabulario. Validada al importar. `scripts/validate-package.ts` no se ha hecho: la validación vive en la app.
+- 🔧 6. Restauración en instalación limpia: mismo número de entidades y mismos hashes de fotos, verificado en e2e con un perfil de navegador nuevo. ⏳ **En Android** (procedimiento en `TESTING.md`).
+- ✅ 7 (parcial). Conflictos con decisión explícita y atomicidad, para copias. `batch` y `patch` siguen pendientes (2b).
+- ✅ 8. Batería de copias dañadas o incompatibles con mensajes comprensibles.
+- ✅ 9. Inicio y Ajustes muestran la última copia generada y los cambios sin copiar.
 
 Criterios de aceptación:
 1. Seleccionar más de 30 fotos crea más de 30 borradores sin bloquear la UI (procesado en worker, con progreso).
