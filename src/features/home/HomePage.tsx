@@ -8,6 +8,7 @@ import { getStorageStatus, type StorageStatus } from '../../platform/storage';
 import { Icon } from '../../ui/Icon';
 import { ItemCard } from '../wardrobe/WardrobePage';
 import { setCatalogFilter } from '../wardrobe/filterStore';
+import { BackupReminder } from '../backup/BackupPanel';
 
 export function HomePage() {
   const q = useDbQuery(() => loadItems(), [], 'cargar Inicio');
@@ -54,13 +55,8 @@ export function HomePage() {
         ))}
       </div>
 
-      <div className="notice notice--backup">
-        <Icon name="shield" size={20} />
-        <div>
-          <strong>Aún no hay copia de seguridad.</strong> Tus prendas solo existen en este navegador. La exportación llegará en la siguiente fase; no borres los datos de Chrome mientras tanto.
-          {storage?.persisted === false && <> El navegador no ha concedido almacenamiento persistente (ver Ajustes).</>}
-        </div>
-      </div>
+      <BackupReminder />
+      {storage?.persisted === false && <p className="hint">El navegador no ha concedido almacenamiento persistente (ver Ajustes).</p>}
 
       <Link href="/nueva" className="btn btn--wide"><Icon name="plus" size={18} /> Añadir prenda</Link>
 

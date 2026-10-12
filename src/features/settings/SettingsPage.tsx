@@ -6,6 +6,7 @@ import { SCHEMA_VERSION } from '../../domain/schema';
 import { formatBytes, getStorageStatus, requestPersistence, type StorageStatus } from '../../platform/storage';
 import { Icon } from '../../ui/Icon';
 import { PageHeader } from '../../ui/PageHeader';
+import { BackupPanel } from '../backup/BackupPanel';
 
 export function SettingsPage() {
   const [st, setSt] = useState<StorageStatus>();
@@ -40,14 +41,7 @@ export function SettingsPage() {
         <p className="hint">«Persistente» reduce el riesgo de que Chrome borre los datos por falta de espacio, pero no los protege si borras los datos del sitio, desinstalas la app, cambias de navegador o pierdes el móvil.</p>
       </section>
 
-      <section className="panel">
-        <h2 className="h2">Copias de seguridad</h2>
-        <p className="notice notice--warn">Todavía no se ha generado ninguna exportación: tus datos no están respaldados. La exportación e importación de copias (.armario.zip) llegan en la Fase 2.</p>
-        <div className="row">
-          <button type="button" className="btn btn--ghost" disabled>Exportar copia</button>
-          <button type="button" className="btn btn--ghost" disabled>Importar</button>
-        </div>
-      </section>
+      <BackupPanel />
 
       <section className="panel">
         <h2 className="h2"><Icon name="shield" size={18} /> Privacidad</h2>

@@ -2,6 +2,7 @@ import { Component, useEffect, useState, type ReactNode } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Link, Route, Router, Switch, useLocation } from 'wouter';
 import { useHashLocation } from 'wouter/use-hash-location';
+import { RestorePage } from '../features/backup/RestorePage';
 import { DiagnosticsPage } from '../features/diagnostics/DiagnosticsPage';
 import { ItemEditorPage } from '../features/editor/ItemEditorPage';
 import { logError, onError } from '../platform/errorLog';
@@ -117,6 +118,7 @@ function Routes() {
         <Route path="/outfits" component={OutfitsPage} />
         <Route path="/ajustes" component={SettingsPage} />
         <Route path="/diagnostico" component={DiagnosticsPage} />
+        <Route path="/copias/restaurar" component={RestorePage} />
         <Route>
           <div className="page"><p>Página no encontrada.</p><Link href="/" className="btn">Ir al inicio</Link></div>
         </Route>
