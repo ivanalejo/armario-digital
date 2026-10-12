@@ -83,6 +83,7 @@ Datos de prueba siempre **sintéticos**: las imágenes se generan en el propio t
 | 2026-10-12 | 2a+3 | **v0.3.0** (integración) `npm test`: 123 tests en 10 archivos (incluye ida y vuelta de conjuntos v0.2.0 y eventos de preferencias) | ✅ 123/123 |
 | 2026-10-12 | 2a+3 | **v0.3.0** tsc + lint + build + check-dist (637 KB) + guard | ✅ |
 | 2026-10-12 | 2a+3 | **v0.3.0** `npm run e2e`: 29 tests (24 de v0.2.0 + 5 de copias), dos ejecuciones seguidas | ✅ 29/29 y 29/29 |
+| 2026-10-12 | 2a+3 | **v0.3.0** con las correcciones de Windows: `npm test` 126/126, lint y build también con CRLF (clon con `core.autocrlf=true` y árbol forzado a CRLF); e2e 29/29. No probado en Windows real | ✅ |
 
 Entorno: Linux, Node 22, Chromium 153 headless. Playwright no pudo descargar su navegador en el entorno de desarrollo; se usó un Chromium empaquetado mediante `CHROMIUM_PATH`. En la CI de GitHub se instala el de Playwright.
 
