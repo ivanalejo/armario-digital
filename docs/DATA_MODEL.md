@@ -125,6 +125,14 @@ Binarios en la tabla `blobs` con clave `[imageId, variant]`, `variant ∈ { disp
 | `createdAt` | datetime | Sí | |
 | `notes` | string | No | |
 
+**Campos añadidos en v0.2.0** (opcionales; los registros anteriores siguen siendo válidos y no hay migración):
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `key` | string | Huella canónica de las piezas principales (`outer:…|mid:…|base:…|bottom:…|footwear:…`). Evita guardar dos veces el mismo conjunto |
+| `rating` | 1–5 | Valoración en estrellas |
+| `weather` | `{ temp: hot\|mild\|cold, rain: boolean }` | Clima con el que se guardó |
+
 ### 3.4 WearEntry (registro de uso)
 
 `{ id, date: 'YYYY-MM-DD', itemIds: string[], outfitId?: string, occasionId?: string, note?: string }`. El “último uso” de cada prenda se calcula a partir de aquí (no se duplica en `Item`).
@@ -151,6 +159,8 @@ Registro **solo de inserción** de interacciones. El modelo de preferencias se c
 | `reason` | `not-today \| style \| colors \| fit \| formality \| weather \| other` | Opcional. `not-today` no cuenta como preferencia |
 | `context` | `{ occasionId?, weather?, rain? }` | Para no aprender de una ocasión lo que se dijo en otra |
 | `source` | `recommender \| manual` | |
+
+**En uso desde v0.2.0:** `favorite` (al guardar), `rating`, `dismiss` (con `reason: not-today` para «hoy no»), `worn` y `swap` (cambiar una pieza). `like`/`dislike` de prenda y de parte de un conjunto se usarán en la Fase 5.
 
 ### 3.7 Kit (catalogación; tabla creada en v1, se usa en Fase 2)
 

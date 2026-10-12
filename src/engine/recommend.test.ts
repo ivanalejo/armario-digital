@@ -359,9 +359,9 @@ describe('invariantes con armarios aleatorios', () => {
   const occasions = ['casual', 'smart-casual', 'office', 'office-formal', 'night-out', 'formal-event', 'sport'];
   const temps = ['hot', 'mild', 'cold'] as const;
 
-  it('300 armarios × peticiones aleatorias: nunca falla y respeta las reglas', () => {
+  it('1 000 armarios × peticiones aleatorias: nunca falla y respeta las reglas', () => {
     const r = rng(20261012);
-    for (let n = 0; n < 300; n++) {
+    for (let n = 0; n < 1000; n++) {
       resetIds();
       const w = randomWardrobe(r, 3 + Math.floor(r() * 60));
       const byId = new Map(w.map((i) => [i.id, i]));

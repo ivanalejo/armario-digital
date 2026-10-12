@@ -1,6 +1,6 @@
 # Arquitectura
 
-Versión del documento: 0.2 · Última revisión: 2026-10-11 (Fase 0 aprobada + cortes/siluetas + personalización)
+Versión del documento: 0.3 (v0.2.0, recomendador implementado) · Última revisión: 2026-10-11 (Fase 0 aprobada + cortes/siluetas + personalización)
 
 ## 1. Visión general
 
@@ -208,9 +208,28 @@ Tras el fallo en Android de la v0.1.0 (ver `TESTING.md`, incidencia 2026-10-11):
 | Registros | GitHub registra la IP de los visitantes | Solo ve descargas de la app, nunca datos del armario |
 | Visibilidad | Todo lo publicado es accesible por URL | `dist/` solo contiene la app; comprobado por script (§9) |
 
-## 8. Recomendador (diseño v1)
+## 8. Recomendador (implementado en v0.2.0)
 
-Motor puro: `recommend(inventory, request, context) → Outfit[]`. Sin React, sin Dexie, determinista (misma entrada → misma salida; desempates por ID).
+Motor puro en `src/engine/` (`recommend`, `evaluateOutfit`, `alternativesFor`, `pickDaily`). No depende de React ni de Dexie y es determinista: la misma entrada da la misma salida y los empates se resuelven por ID. Inicio y Outfits usan **el mismo motor con las mismas reglas**, a través de `useRecommendations` (`src/features/outfits/useWardrobeData.ts`).
+
+### Implementación v0.2.0 (lo que hay realmente en el código)
+
+| Aspecto | Valor |
+|---|---|
+| Ocasiones | `engine/occasions.ts`: rango de formalidad, estilos preferidos, tipos excluidos y accesorios. Son datos, no lógica |
+| Clima | Frío / templado / calor + lluvia. Por defecto según el mes (aproximación para Madrid); el usuario lo cambia con un toque |
+| Descarte por formalidad | Solo con formalidad **confirmada** y una diferencia ≥ 1,5 niveles respecto al rango de la ocasión (`FORMALITY_GAP`) |
+| Umbral de validez | Por debajo de 50 puntos (`MIN_SCORE`) una combinación no se muestra |
+| Piezas obligatorias | Base + inferior + calzado. Con frío se exige capa exterior si existe alguna disponible; con calor no hay capa exterior (salvo una ligera si llueve) |
+| Búsqueda | Preselección por posición (12 / 12 / 10 / 6 / 6) y haz: base×inferior 40 → calzado 50 → capa intermedia 60 → exterior 80 |
+| Conjuntos parciales | Durante la búsqueda no se penaliza la falta de abrigo (`partial`), para no podar camisetas que luego llevarán abrigo |
+| Datos estimados | Cuentan, pero se acercan un 30 % a neutro; nunca excluyen |
+| Diversidad | Primero propuestas que no comparten 2 de las 3 piezas principales; después, las que cambian al menos una. Nunca dos con el mismo núcleo |
+| Propuesta del día | `pickDaily`: elección determinista entre las 3 mejores según la fecha y el contexto. Se fija en cuanto se muestra («Otra» pasa a la siguiente) |
+| Preferencias (versión sencilla) | `engine/preferences.ts`: favoritos, conjuntos guardados y valorados, descartes, uso reciente y prendas olvidadas. «Hoy no» oculta la propuesta solo ese día; «No me gusta» la oculta 30 días y resta afinidad a la combinación, no a cada prenda. Contracción k = 3 para prendas y parejas |
+| Rendimiento | 300 prendas: < 1 s la generación completa y < 300 ms las alternativas de una pieza, en Node. En el móvil está pendiente de medir |
+
+### Entrada (diseño original; la v0.2.0 implementa `occasionId`, `weather`, `mustInclude`, `exclude`, `limit`)
 
 ### Entrada
 
@@ -303,6 +322,17 @@ Las ocasiones, la matriz de estilos y las reglas de color son **datos** (`engine
 ### Lo que el motor NO hace
 
 No “ve” las prendas: solo conoce sus atributos. Si la ficha dice que una camisa es azul marino y es azul claro, la recomendación será mala. La calidad depende de la catalogación.
+
+## 8.3 Pantallas (v0.2.0)
+
+| Sección | Para qué sirve |
+|---|---|
+| **Inicio** | Decidir qué ponerse: el outfit del día es lo protagonista (Otra · Guardar · Me lo pongo · Descartar), con ocasión y clima en un toque. Debajo, conjuntos guardados, un resumen compacto del armario y una tira de últimas incorporaciones. Si faltan prendas, explica cuáles |
+| **Armario** | Catálogo y gestión: búsqueda, filtros, fichas y edición, más accesos rápidos a borradores, pendientes de revisar y no disponibles |
+| **Outfits** | Explorar (las mismas propuestas que Inicio, con más resultados y la opción de fijar una prenda), Guardados (con valoración ★) e Historial |
+| **Ficha** | Nuevo botón «Combinar esta prenda» (abre Explorar con esa prenda fijada) |
+
+La ocasión y el clima elegidos, y la propuesta del día, se recuerdan en `localStorage`. Es una comodidad de este dispositivo: si no está disponible, la app funciona igual con los valores por defecto.
 
 ## 9. Garantías de privacidad (técnicas)
 

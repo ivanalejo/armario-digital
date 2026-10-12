@@ -4,8 +4,8 @@
 |---|---|
 | 0 · Diseño técnico | ✅ Aprobada (2026-10-11), ampliada con cortes/siluetas y personalización |
 | 1 · MVP de inventario | 🔧 v0.1.1: corregido el bloqueo visto en Android (v0.1.0) · ⏳ pendiente de revalidar en Android |
-| 2 · Lotes, kit de catalogación y copias | ⬜ |
-| 3 · Recomendador | ⬜ |
+| 2 · Lotes, kit de catalogación y copias | ⬜ **Siguiente recomendada** (aún no hay copias de seguridad) |
+| 3 · Recomendador | 🔧 v0.2.0: implementado y probado en navegador · ⏳ validación en Android y con el armario real |
 | 4 · PWA y robustez | ⬜ |
 | 5 · Personalización progresiva | ⬜ |
 
@@ -56,6 +56,16 @@ Criterios de aceptación:
 9. Inicio muestra los días desde la última exportación generada y los cambios sin exportar.
 
 ## Fase 3 · Recomendador
+
+> **Orden cambiado (2026-10-12):** a petición de Iván, la Fase 3 se adelanta a la Fase 2. Riesgo aceptado: mientras no exista la exportación (Fase 2), el inventario solo está en el navegador del móvil.
+
+Estado v0.2.0 (✅ verificado · ⏳ pendiente):
+- ✅ 1. Motor puro en `src/engine/`: 97 % de líneas cubiertas.
+- ✅ 2. Escenarios automatizados (37 tests): obligatorias, disponibilidad, lluvia, frío, calor, formalidad, desconocidos y estimados, silueta, diversidad, inventarios pequeños o vacíos, y 1 000 armarios aleatorios con invariantes.
+- ✅ 3. Cada propuesta muestra puntuación, hasta 3 motivos y avisos (incluida la confianza baja).
+- 🔧 4. Rendimiento en Node con 300 prendas: generación < 1 s y alternativas < 300 ms. ⏳ Medir en el móvil.
+- ✅ 5. Guardar, valorar, registrar uso, historial y descartes (e2e).
+- ⏳ 6. Validación con tu armario real (20 peticiones, ≥ 70 % «me lo pondría»). El algoritmo **no está validado** hasta hacerla.
 
 El algoritmo **no se considera validado** hasta superar las pruebas automáticas y la validación con el armario real.
 

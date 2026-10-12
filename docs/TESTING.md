@@ -67,6 +67,13 @@ Datos de prueba siempre **sintéticos**: las imágenes se generan en el propio t
 | 2026-10-11 | 1 | **v0.1.1** `npm test`: 61 tests en 7 archivos | ✅ 61/61 |
 | 2026-10-11 | 1 | **v0.1.1** lint + build + check-dist | ✅ |
 | 2026-10-11 | 1 | **v0.1.1** `npm run e2e`: 12 tests (4 originales + 8 de robustez) | ✅ 12/12 |
+| 2026-10-12 | 1 | **Android real (Iván), v0.1.1**: carga, guardado y navegación | ✅ según Iván |
+| 2026-10-12 | 3 | **v0.2.0** `npm test`: 103 tests en 9 archivos (37 del motor, 5 de outfits y compatibilidad) | ✅ 103/103 |
+| 2026-10-12 | 3 | Cobertura de `src/engine` | ✅ 97 % de líneas, 87 % de ramas |
+| 2026-10-12 | 3 | **v0.2.0** lint + build + check-dist (594 KB) + guard | ✅ |
+| 2026-10-12 | 3 | **v0.2.0** `npm run e2e`: 24 tests (4 base + 9 de robustez + 11 de outfits), dos ejecuciones seguidas | ✅ 24/24 y 24/24 |
+| 2026-10-12 | 3 | Prueba de bloqueo de IndexedDB: 8 ejecuciones seguidas tras corregir una carrera de la propia prueba | ✅ 8/8 |
+| 2026-10-12 | 3 | Revisión visual (Pixel 7, Chromium 153): Inicio vacío y con datos, cambiar pieza, Explorar, Guardados, Armario | ✅ tras corregir tamaño de fotos, propuesta del día y nombre oculto en tarjetas |
 
 Entorno: Linux, Node 22, Chromium 153 headless. Playwright no pudo descargar su navegador en el entorno de desarrollo; se usó un Chromium empaquetado mediante `CHROMIUM_PATH`. En la CI de GitHub se instala el de Playwright.
 
@@ -102,6 +109,55 @@ Entorno: Linux, Node 22, Chromium 153 headless. Playwright no pudo descargar su 
 - Persistencia y coherencia tras **cerrar el navegador por completo** y reabrirlo (perfil persistente).
 - Fichas inválidas que no bloquean el resto y detección de incoherencias sin modificar nada.
 
+**Recomendador** (`src/engine/recommend.test.ts`, v0.2.0):
+- Propuestas completas y solo con prendas del inventario; determinismo; diversidad; nunca el mismo núcleo dos veces.
+- Prendas obligatorias:
+  - siempre presentes, incluida una que puede ir de base o de capa;
+  - incluidas aunque no estén disponibles, con aviso;
+  - dos para la misma posición → aviso.
+- Disponibilidad: nada para lavar, guardado, en arreglo, prestado, dado de baja ni borradores.
+- Clima:
+  - Lluvia: prioriza el impermeable, sin sandalias y con aviso por el ante.
+  - Frío: exige capa exterior, sin cortos ni sandalias; sin abrigos disponibles, propone igualmente con aviso.
+  - Calor: sin capa exterior.
+- Ocasiones:
+  - Evento formal: sin zapatillas, vaqueros ni camisetas.
+  - Reunión: sin sudaderas.
+  - Deporte: sin camisas ni zapatos.
+  - Evento formal sin calzado adecuado → explica qué falta.
+- Datos:
+  - Un armario con solo tipo y color sigue funcionando, con aviso de confianza.
+  - La formalidad estimada no excluye; la confirmada sí.
+  - Sin color conocido, la prenda puntúa neutro.
+- Silueta: oversize con tapered puntúa mejor que oversize con baggy.
+- Inventario vacío, una prenda de cada tipo, sin calzado disponible, combinaciones inaceptables → sin propuestas.
+- Preferencias:
+  - Descartes «no me gusta» y «hoy no».
+  - Los favoritos suman.
+  - El uso reciente baja sin hundir el conjunto.
+- Sustituir pieza, quitar capa, conjunto con prenda borrada, accesorios según la ocasión, propuesta del día.
+- 1 000 armarios aleatorios con invariantes.
+- Rendimiento con 300 prendas.
+
+**Outfits y compatibilidad** (`src/db/outfits.test.ts`):
+- Guardar sin duplicar, valorar, descartar, registrar uso y borrar sin perder el historial.
+- Una base de datos con fichas y fotos de v0.1.0/v0.1.1 (Blob y ArrayBuffer) se lee, sirve para recomendar y no se modifica.
+- Un conjunto guardado en el formato anterior sigue siendo válido.
+
+**E2E de la Fase 3** (`e2e/outfits.spec.ts`, datos sintéticos en formato v0.1.1):
+- Inicio vacío.
+- Outfit del día: fotos que cargan, enlaces a las fichas y motivos.
+- «Otra» y persistencia de la elección.
+- Guardar no cambia la propuesta del día.
+- Valorar, «me lo pongo», historial y eventos.
+- Descartar.
+- No disponibles excluidas.
+- Sin calzado → explicación.
+- Combinar desde la ficha.
+- Cambiar pieza.
+- Accesos de gestión del Armario y nombre visible en tarjetas.
+- **Solo GET al propio origen** durante todo el flujo.
+
 **E2E** (`e2e/app.spec.ts`):
 - Alta desde la galería con un JPEG de 2400×3200 con EXIF+GPS. Se guarda como WebP de 1600 px sin `Exif` ni marca GPS en los binarios, con la huella del original.
 - Recarga, búsqueda por alias, edición con segunda foto (2 imágenes y 4 binarios) y borrado (0 restos).
@@ -132,6 +188,19 @@ Entorno: Linux, Node 22, Chromium 153 headless. Playwright no pudo descargar su 
 - [ ] **Modo avión**: abrir la app, añadir y editar una prenda.
 - [ ] Cuadrícula fluida con 50 o más prendas.
 - [ ] Una foto HEIC (si la cámara lo permite) muestra un error claro.
+
+## Checklist en Android para v0.2.0 (pendiente: lo tienes que hacer tú)
+
+- [ ] Tras actualizar, Ajustes muestra la versión **0.2.0** y tus prendas siguen ahí. Diagnóstico → coherencia correcta.
+- [ ] Inicio muestra un outfit del día con tus fotos. «Otra», «Guardar», «Me lo pongo» y «Descartar» responden.
+- [ ] La propuesta del día no cambia al cerrar y reabrir la app el mismo día.
+- [ ] Cambiar ocasión y tiempo (frío, lluvia) produce propuestas coherentes.
+- [ ] Marca una prenda como «Para lavar»: no vuelve a aparecer en las propuestas.
+- [ ] Outfits → Guardados (valorar) e Historial.
+- [ ] Ficha → «Combinar esta prenda».
+- [ ] Rendimiento: la propuesta aparece en menos de 1 s.
+- [ ] Modo avión: Inicio y Outfits funcionan.
+- [ ] Validación del recomendador: 20 peticiones reales; anota cuántas te pondrías.
 
 ## Pendientes de verificar
 

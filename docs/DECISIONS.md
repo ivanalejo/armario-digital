@@ -81,5 +81,27 @@ Cuatro capas:
 - Se añade una pantalla de diagnóstico de solo lectura y un registro local de errores.
 - Nunca se borra ni se «repara» automáticamente ningún dato.
 
+## ADR-016 · Fase 3 antes que Fase 2 · Aceptada (2026-10-12)
+Iván prioriza el recomendador y la nueva Inicio. Consecuencia: la exportación de copias sigue pendiente. Se mantiene el aviso discreto en Inicio y la Fase 2 queda como siguiente recomendada.
+
+## ADR-017 · Umbrales del recomendador · Aceptada (2026-10-12, revisable con datos reales)
+- Una prenda queda fuera solo con formalidad **confirmada** a ≥ 1,5 niveles del rango de la ocasión. Con 2 niveles se colaban, por ejemplo, unas botas de ante (2–3) en un evento formal.
+- Una combinación no se muestra por debajo de 50/100.
+- Con lluvia, una prenda exterior no impermeable multiplica por 0,6 el criterio de temporada.
+- Todo está en constantes y datos (`recommend.ts`, `occasions.ts`) para ajustarlo cuando se valide con el armario real.
+
+## ADR-018 · Preferencias sencillas ahora, aprendizaje en Fase 5 · Aceptada (2026-10-12)
+- Hoy el motor usa:
+  - favoritos;
+  - guardados y valoraciones;
+  - descartes («hoy no» solo ese día; «no me gusta» 30 días);
+  - uso reciente (como mucho −0,2 dentro del 10 %);
+  - prendas olvidadas.
+- Todas las interacciones se guardan ya como eventos (`feedback`). La Fase 5 podrá recalcular el modelo con decaimiento temporal, contexto y exploración sin cambiar la interfaz `PreferenceModel`.
+
+## ADR-019 · Propuesta del día estable · Aceptada (2026-10-12)
+- Se elige de forma determinista entre las 3 mejores y se fija en cuanto se muestra.
+- Sin esto, guardarla cambiaba el ranking y la propuesta saltaba a otra (detectado en las pruebas).
+
 ## Pendientes
 - Revalidar la v0.1.1 en Android y confirmar o descartar las hipótesis de la incidencia del 2026-10-11 (`TESTING.md`).
