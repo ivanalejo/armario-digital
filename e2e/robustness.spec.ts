@@ -60,7 +60,8 @@ test('Inicio no se queda en «Cargando…» si la base de datos no responde, y s
   // Al liberarse, la consulta pendiente termina sola; si no, «Reintentar» la relanza.
   await holder.evaluate(() => { (window as unknown as { __release: boolean }).__release = true; });
   const retry = page.getByRole('button', { name: 'Reintentar' }).first();
-  if (await retry.isVisible()) await retry.click().catch(() => {});
+  // Puede recuperarse sola entre la comprobación y el clic: el clic no debe esperar indefinidamente.
+  if (await retry.isVisible()) await retry.click({ timeout: 2000 }).catch(() => {});
   await expect(page.getByText('Prendas', { exact: true })).toBeVisible();
   await expect(page.getByText(/no responde/i)).toHaveCount(0);
   await context.close();
