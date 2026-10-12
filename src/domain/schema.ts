@@ -195,6 +195,12 @@ export const OutfitSchema = z
     favorite: z.boolean(),
     createdAt: DateTime,
     notes: z.string().max(2000).optional(),
+    // v0.2.0 (opcionales; los registros anteriores siguen siendo válidos):
+    /** Huella canónica de las piezas principales, para reconocer el mismo conjunto. */
+    key: z.string().max(400).optional(),
+    /** Valoración 1–5 estrellas. */
+    rating: z.number().int().min(1).max(5).optional(),
+    weather: z.object({ temp: z.enum(['hot', 'mild', 'cold']), rain: z.boolean() }).strict().optional(),
   })
   .strict();
 export type Outfit = z.infer<typeof OutfitSchema>;

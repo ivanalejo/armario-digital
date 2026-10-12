@@ -224,7 +224,7 @@ Motor puro: `recommend(inventory, request, context) → Outfit[]`. Sin React, si
 
 ### Pipeline
 
-1. **Filtros duros:** disponibilidad, exclusiones de la ocasión (p. ej. chanclas en oficina), formalidad fuera de rango por ≥ 2 puntos, prendas incompatibles con el clima (abrigo con calor). Las prendas obligatorias **no se filtran nunca**; si violan una regla dura se avisa (“has fijado X, que no encaja con Evento formal”).
+1. **Filtros duros:** disponibilidad, exclusiones de la ocasión (p. ej. chanclas en oficina), formalidad confirmada fuera de rango por ≥ 1,5 niveles (las estimadas nunca excluyen), prendas incompatibles con el clima (abrigo con calor). Las prendas obligatorias **no se filtran nunca**; si violan una regla dura se avisa (“has fijado X, que no encaja con Evento formal”).
 2. **Pre-puntuación individual** de cada prenda frente a la ocasión y el clima; se quedan las 12 mejores por ranura (+ obligatorias).
 3. **Búsqueda por haz (beam search)** ranura a ranura (bottom → base → footwear → mid → outer), conservando las 200 mejores combinaciones parciales con puntuación por pares. Acota el coste con inventarios grandes.
 4. **Accesorios** de forma voraz al final (cinturón si hay pantalón con trabillas y formalidad ≥ 3, reloj, bufanda si hace frío).
