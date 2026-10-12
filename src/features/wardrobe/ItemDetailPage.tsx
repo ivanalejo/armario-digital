@@ -140,6 +140,12 @@ export function ItemDetailPage({ id }: { id: string }) {
         <ChipGroup options={STATUSES} selected={[item.status]} onToggle={(s: StatusId) => void act('cambiar estado', () => patchItem(item.id, { status: s }))} />
       </div>
 
+      {!item.isDraft && (
+        <Link href={`/outfits/con/${item.id}`} className="btn btn--wide" data-testid="combine-item">
+          <Icon name="sparkles" size={18} /> Combinar esta prenda
+        </Link>
+      )}
+
       <dl className="kvs">
         <Row label="Tipo" est={est('subcategoryId')}>{categoryLabel(item.categoryId)} · {item.subcategoryId ? subcategoryLabel(item.subcategoryId) : UNKNOWN}</Row>
         <Row label="Color principal" est={est('colors.primary')}>{item.colors?.primary ? colorChip(item.colors.primary) : UNKNOWN}</Row>

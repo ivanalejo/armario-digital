@@ -1,75 +1,138 @@
+// Inicio: panel personal para vestirse. Lo protagonista es la propuesta del día;
+// el catálogo completo vive en Armario.
 import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
-import { loadItems } from '../../db/health';
-import { useDbQuery } from '../../db/useDbQuery';
-import { LoadState } from '../../ui/LoadState';
 import { catalogStats } from '../../domain/catalog';
+import { evaluateOutfit, pickDaily } from '../../engine';
 import { getStorageStatus, type StorageStatus } from '../../platform/storage';
 import { Icon } from '../../ui/Icon';
-import { ItemCard } from '../wardrobe/WardrobePage';
+import { LoadState } from '../../ui/LoadState';
+import { Thumb } from '../../ui/Thumb';
+import { ContextBar } from '../outfits/ContextBar';
+import { readDailyKey, useOutfitContext, writeDailyKey } from '../outfits/context';
+import { NotEnough } from '../outfits/NotEnough';
+import { OutfitBoard } from '../outfits/OutfitBoard';
+import { OutfitCard } from '../outfits/OutfitCard';
+import { useRecommendations, useWardrobeData } from '../outfits/useWardrobeData';
 import { setCatalogFilter } from '../wardrobe/filterStore';
+import { localDate } from '../../db/outfits';
+
+const today = () =>
+  new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, (c) => c.toUpperCase());
 
 export function HomePage() {
-  const q = useDbQuery(() => loadItems(), [], 'cargar Inicio');
+  const q = useWardrobeData('cargar Inicio');
+  const ctx = useOutfitContext();
+  const result = useRecommendations(q.data, ctx);
   const [storage, setStorage] = useState<StorageStatus>();
   useEffect(() => void getStorageStatus().then(setStorage).catch(() => undefined), []);
-  if (q.status !== 'ready' || !q.data) {
+
+  // La propuesta del día se recuerda (por día y contexto) para que no cambie cada vez que abres la app.
+  const ctxKey = `${ctx.occasionId}|${ctx.weather.temp}|${ctx.weather.rain}`;
+  const [chosen, setChosen] = useState(() => readDailyKey(ctxKey));
+  useEffect(() => setChosen(readDailyKey(ctxKey)), [ctxKey]);
+  // Si la elegida ya no es válida (descartada, prenda no disponible…), se elige otra entre las mejores.
+  const shown = result?.outfits.find((o) => o.key === chosen) ?? (result ? pickDaily(result.outfits, `${localDate()}|${ctxKey}`) : undefined);
+  // Se fija en cuanto se muestra: guardarla o valorarla cambia el ranking, pero no debe cambiar la de hoy.
+  useEffect(() => {
+    if (shown && shown.key !== chosen) {
+      writeDailyKey(ctxKey, shown.key);
+      setChosen(shown.key);
+    }
+  }, [shown, chosen, ctxKey]);
+
+  if (q.status !== 'ready' || !q.data || !result) {
     return (
       <div className="page">
-        <header className="hero"><h1>Tu armario</h1></header>
+        <header className="today"><p className="today__date">{today()}</p><h1>¿Qué me pongo?</h1></header>
         <LoadState q={q} what="tus prendas" />
       </div>
     );
   }
-  const { items, invalid } = q.data;
+  const data = q.data;
+  const s = catalogStats(data.items);
+  const recent = [...data.items].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 8);
 
-  const s = catalogStats(items);
-  const recent = [...items].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6);
-  const tiles = [
-    { label: 'Prendas', value: s.total, filter: {} },
-    { label: 'Disponibles', value: s.available, filter: { statuses: ['available' as const], drafts: 'exclude' as const } },
-    { label: 'Borradores', value: s.drafts, filter: { drafts: 'only' as const } },
-    { label: 'Por revisar', value: s.pendingReview, filter: { pendingReview: true } },
-  ];
+  const next = () => {
+    if (!shown) return;
+    const i = result.outfits.findIndex((o) => o.key === shown.key);
+    const n = result.outfits[(i + 1) % result.outfits.length]!;
+    writeDailyKey(ctxKey, n.key);
+    setChosen(n.key);
+  };
+
+  const saved = data.outfits.slice(0, 6).map((o) => ({ o, ev: evaluateOutfit(o.slots, data.items, { occasionId: o.occasionId ?? ctx.occasionId, weather: ctx.weather }) }));
 
   return (
-    <div className="page">
-      <header className="hero">
-        <h1>Tu armario</h1>
-        <p className="muted">Todo se guarda solo en este dispositivo.</p>
+    <div className="page page--home">
+      <header className="today">
+        <p className="today__date">{today()}</p>
+        <h1>¿Qué me pongo?</h1>
       </header>
 
-      {invalid.length > 0 && (
+      {data.invalid.length > 0 && (
         <Link href="/diagnostico" className="notice notice--warn">
-          {invalid.length} ficha{invalid.length > 1 ? 's' : ''} con datos no válidos no se muestra{invalid.length > 1 ? 'n' : ''}. No se ha borrado nada: ver diagnóstico.
+          {data.invalid.length} ficha{data.invalid.length > 1 ? 's' : ''} con datos no válidos no se muestra{data.invalid.length > 1 ? 'n' : ''}. No se ha borrado nada: ver diagnóstico.
         </Link>
       )}
 
-      <div className="tiles">
-        {tiles.map((t) => (
-          <Link key={t.label} href="/armario" className="tile" onClick={() => setCatalogFilter(t.filter)}>
-            <span className="tile__value">{t.value}</span>
-            <span className="tile__label">{t.label}</span>
-          </Link>
-        ))}
-      </div>
+      <section className="daily" aria-labelledby="daily-title">
+        <h2 id="daily-title" className="h2">Tu outfit de hoy</h2>
+        <ContextBar />
+        {shown ? (
+          <OutfitCard rec={shown} data={data} ctx={ctx} variant="hero" onNext={result.outfits.length > 1 ? next : undefined} testId="daily-outfit" />
+        ) : (
+          <NotEnough result={result} items={data.items} />
+        )}
+        {shown && (
+          <Link href="/outfits" className="link-more">Ver más propuestas <Icon name="right" size={16} /></Link>
+        )}
+      </section>
 
-      <div className="notice notice--backup">
-        <Icon name="shield" size={20} />
-        <div>
-          <strong>Aún no hay copia de seguridad.</strong> Tus prendas solo existen en este navegador. La exportación llegará en la siguiente fase; no borres los datos de Chrome mientras tanto.
-          {storage?.persisted === false && <> El navegador no ha concedido almacenamiento persistente (ver Ajustes).</>}
-        </div>
-      </div>
+      {saved.length > 0 && (
+        <section aria-labelledby="saved-title">
+          <div className="section-head">
+            <h2 id="saved-title" className="h2">Tus conjuntos</h2>
+            <Link href="/outfits/guardados" className="link-more">Ver todos <Icon name="right" size={16} /></Link>
+          </div>
+          <div className="strip">
+            {saved.map(({ o, ev }) => (
+              <Link key={o.id} href="/outfits/guardados" className="strip__card" aria-label="Conjunto guardado">
+                <OutfitBoard pieces={ev.pieces} size="mini" />
+                {o.rating && <span className="strip__rating">{'★'.repeat(o.rating)}</span>}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
-      <Link href="/nueva" className="btn btn--wide"><Icon name="plus" size={18} /> Añadir prenda</Link>
+      {s.total > 0 && <section className="stats-line" aria-label="Resumen del armario">
+        <Link href="/armario" onClick={() => setCatalogFilter({})}><strong>{s.total}</strong> prendas</Link>
+        <Link href="/armario" onClick={() => setCatalogFilter({ statuses: ['available'], drafts: 'exclude' })}><strong>{s.available}</strong> disponibles</Link>
+        {s.drafts > 0 && <Link href="/armario" onClick={() => setCatalogFilter({ drafts: 'only' })}><strong>{s.drafts}</strong> borradores</Link>}
+        {s.pendingReview > 0 && <Link href="/armario" onClick={() => setCatalogFilter({ pendingReview: true })}><strong>{s.pendingReview}</strong> por revisar</Link>}
+      </section>}
 
       {recent.length > 0 && (
-        <>
-          <h2 className="h2">Añadidas recientemente</h2>
-          <div className="grid">{recent.map((it) => <ItemCard key={it.id} item={it} />)}</div>
-        </>
+        <section aria-labelledby="recent-title">
+          <div className="section-head">
+            <h2 id="recent-title" className="h2 h2--small">Últimas incorporaciones</h2>
+            <Link href="/armario" className="link-more" onClick={() => setCatalogFilter({})}>Ver armario <Icon name="right" size={16} /></Link>
+          </div>
+          <div className="strip strip--small">
+            {recent.map((it) => (
+              <Link key={it.id} href={`/prenda/${it.id}`} className="strip__item" aria-label={it.name}>
+                <Thumb imageId={it.imageIds[0]} alt={it.name} />
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
+
+      <p className="backup-line">
+        <Icon name="shield" size={16} /> Sin copia de seguridad todavía: tus prendas solo están en este navegador.
+        {storage?.persisted === false && ' Almacenamiento persistente no concedido.'}
+      </p>
     </div>
   );
 }

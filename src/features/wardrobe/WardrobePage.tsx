@@ -90,6 +90,36 @@ function FilterPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** Accesos rápidos de gestión: lo que necesita atención en el catálogo. */
+function ManageChips({ items }: { items: Item[] }) {
+  const f = useCatalogFilter();
+  const drafts = items.filter((i) => i.isDraft).length;
+  const review = items.filter((i) => i.estimated?.length || i.issues?.length).length;
+  const unavailable = items.filter((i) => i.status !== 'available' && i.status !== 'retired').length;
+  const UNAVAILABLE: StatusId[] = ['laundry', 'stored', 'repair', 'lent'];
+  const isUnavailable = !!f.statuses && f.statuses.length === UNAVAILABLE.length && UNAVAILABLE.every((s) => f.statuses!.includes(s));
+  if (!drafts && !review && !unavailable) return null;
+  return (
+    <div className="chips chips--scroll" role="group" aria-label="Gestión">
+      {drafts > 0 && (
+        <Chip on={f.drafts === 'only'} onClick={() => setCatalogFilter((c) => ({ ...c, drafts: c.drafts === 'only' ? undefined : 'only' }))}>
+          Borradores · {drafts}
+        </Chip>
+      )}
+      {review > 0 && (
+        <Chip on={!!f.pendingReview} onClick={() => setCatalogFilter((c) => ({ ...c, pendingReview: !c.pendingReview || undefined }))}>
+          Por revisar · {review}
+        </Chip>
+      )}
+      {unavailable > 0 && (
+        <Chip on={isUnavailable} onClick={() => setCatalogFilter((c) => ({ ...c, statuses: isUnavailable ? undefined : UNAVAILABLE }))}>
+          No disponibles · {unavailable}
+        </Chip>
+      )}
+    </div>
+  );
+}
+
 export function WardrobePage() {
   const q = useDbQuery(() => loadItems(), [], 'cargar Armario');
   const items = q.data?.items;
@@ -125,6 +155,8 @@ export function WardrobePage() {
           </Chip>
         ))}
       </div>
+
+      {items && items.length > 0 && <ManageChips items={items} />}
 
       {invalid.length > 0 && (
         <Link href="/diagnostico" className="notice notice--warn">

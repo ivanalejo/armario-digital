@@ -125,3 +125,28 @@ export async function loadOutfitData(database: ArmarioDB = defaultDb) {
     feedback: feedbackEvents,
   };
 }
+
+/** Registra que se ha cambiado una pieza de una propuesta (señal para la Fase 5). */
+export async function recordSwap(
+  slots: OutfitSlots,
+  slot: 'base' | 'mid' | 'outer' | 'bottom' | 'footwear',
+  from: string | undefined,
+  ctx: OutfitContext,
+  database: ArmarioDB = defaultDb,
+): Promise<void> {
+  const ids = itemIdsOf(slots);
+  if (!ids.length) return;
+  const ev = feedback({
+    target: 'outfit',
+    kind: 'swap',
+    itemIds: ids,
+    outfit: { slots, key: outfitKey(slots) },
+    slot,
+    ...(from ? { replacedItemId: from } : {}),
+    context: { occasionId: ctx.occasionId, weather: ctx.weather.temp, rain: ctx.weather.rain },
+    source: 'recommender',
+  });
+  await writeTx(database, [database.feedback], 'registrar el cambio', async () => {
+    await database.feedback.add(ev);
+  });
+}

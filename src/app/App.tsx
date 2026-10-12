@@ -114,7 +114,10 @@ function Routes() {
         <Route path="/nueva">{() => <ItemEditorPage />}</Route>
         <Route path="/prenda/:id/editar">{(p) => <ItemEditorPage key={p.id} id={p.id} />}</Route>
         <Route path="/prenda/:id">{(p) => <ItemDetailPage id={p.id} />}</Route>
-        <Route path="/outfits" component={OutfitsPage} />
+        <Route path="/outfits">{() => <OutfitsPage />}</Route>
+        <Route path="/outfits/guardados">{() => <OutfitsPage tab="guardados" />}</Route>
+        <Route path="/outfits/historial">{() => <OutfitsPage tab="historial" />}</Route>
+        <Route path="/outfits/con/:id">{(p) => <OutfitsPage withItem={p.id} />}</Route>
         <Route path="/ajustes" component={SettingsPage} />
         <Route path="/diagnostico" component={DiagnosticsPage} />
         <Route>

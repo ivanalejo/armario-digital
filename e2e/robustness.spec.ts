@@ -48,7 +48,7 @@ test('Inicio no se queda en «Cargando…» si la base de datos no responde, y s
   const context = await browser.newContext();
   const holder = await context.newPage();
   await holder.goto('./');
-  await expect(holder.getByRole('heading', { name: 'Tu armario' })).toBeVisible();
+  await expect(holder.getByRole('heading', { name: '¿Qué me pongo?' })).toBeVisible();
   await holdLock(holder, ['items']);
 
   const page = await context.newPage();
@@ -60,9 +60,27 @@ test('Inicio no se queda en «Cargando…» si la base de datos no responde, y s
   // Al liberarse, la consulta pendiente termina sola; si no, «Reintentar» la relanza.
   await holder.evaluate(() => { (window as unknown as { __release: boolean }).__release = true; });
   const retry = page.getByRole('button', { name: 'Reintentar' }).first();
-  if (await retry.isVisible()) await retry.click().catch(() => {});
-  await expect(page.getByText('Prendas', { exact: true })).toBeVisible();
+  // Puede recuperarse sola entre la comprobación y el clic: el clic no debe esperar indefinidamente.
+  if (await retry.isVisible()) await retry.click({ timeout: 2000 }).catch(() => {});
+  await expect(page.getByRole('heading', { name: 'Tu outfit de hoy' })).toBeVisible();
   await expect(page.getByText(/no responde/i)).toHaveCount(0);
+  await context.close();
+});
+
+test('«Reintentar» con la base de datos aún bloqueada y liberarla después: se recupera sola', async ({ browser }) => {
+  const context = await browser.newContext();
+  const holder = await context.newPage();
+  await holder.goto('./');
+  await expect(holder.getByRole('heading', { name: '¿Qué me pongo?' })).toBeVisible();
+  await holdLock(holder, ['items']);
+  const page = await context.newPage();
+  await fastTimeouts(page);
+  await page.goto('./');
+  await expect(page.getByText(/no responde/i)).toBeVisible({ timeout: 10_000 });
+  await page.getByRole('button', { name: 'Reintentar' }).first().click();
+  await page.waitForTimeout(300);
+  await holder.evaluate(() => { (window as unknown as { __release: boolean }).__release = true; });
+  await expect(page.getByRole('heading', { name: 'Tu outfit de hoy' })).toBeVisible();
   await context.close();
 });
 
@@ -156,7 +174,7 @@ test('un fallo de escritura en IndexedDB se informa, no deja datos parciales y n
   await page.getByTestId('save-item').click();
   await expect(page.getByTestId('delete-item')).toBeVisible();
   await page.getByRole('link', { name: 'Inicio', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Tu armario' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '¿Qué me pongo?' })).toBeVisible();
 });
 
 test('acepta fotos de cámara y galería de distintos tamaños y formatos', async ({ page }) => {
@@ -202,7 +220,7 @@ test('rechaza archivos no compatibles con mensajes claros y sin bloquear la inte
 
 test('abre correctamente con datos ya guardados por la versión anterior (Blob en IndexedDB)', async ({ page }) => {
   await page.goto('./');
-  await expect(page.getByRole('heading', { name: 'Tu armario' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '¿Qué me pongo?' })).toBeVisible();
   const jpeg = await makeImage(page, 300, 400, 'image/webp');
   await page.evaluate(async (b64) => {
     const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));

@@ -14,7 +14,7 @@ test('ciclo completo: crear con foto, consultar, buscar, editar, persistir y bor
   const requests = trackRequests(page);
   page.on('dialog', (d) => void d.accept());
   await page.goto('./');
-  await expect(page.getByRole('heading', { name: 'Tu armario' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '¿Qué me pongo?' })).toBeVisible();
 
   // --- Crear ---
   await page.getByRole('link', { name: 'Añadir', exact: true }).click();
@@ -107,7 +107,7 @@ test('funciona sin conexión tras la primera carga (service worker)', async ({ p
   await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Tu armario' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '¿Qué me pongo?' })).toBeVisible();
   await page.getByRole('link', { name: 'Ajustes' }).click();
   await expect(page.getByRole('heading', { name: 'Ajustes' })).toBeVisible();
   await context.setOffline(false);
