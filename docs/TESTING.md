@@ -72,6 +72,8 @@ Datos de prueba siempre **sintéticos**: las imágenes se generan en el propio t
 | 2026-10-12 | 2a | Prueba de mutación: se desactivan a propósito la verificación SHA-256 y la detección de duplicados | ✅ los tests correspondientes fallan (no pasan en falso) |
 | 2026-10-12 | 2a | **v0.1.2** lint + build + check-dist + guard | ✅ |
 | 2026-10-12 | 2a | **v0.1.2** `npm run e2e`: 16 tests (12 anteriores + 4 de copias) | ✅ 16/16 |
+| 2026-10-12 | 2a | Fallo en Windows (Iván): 4/80 en los ejemplos de la documentación. Reproducido con `core.autocrlf=true` (CRLF): la expresión exigía `json\n` y no encontraba bloques | ❌ → corregido |
+| 2026-10-12 | 2a | Tras la corrección: `npm test` 83/83, lint y build en un clon con `core.autocrlf=true` y en un árbol forzado entero a CRLF. No probado en Windows real | ✅ 83/83 |
 
 Entorno: Linux, Node 22, Chromium 153 headless. Playwright no pudo descargar su navegador en el entorno de desarrollo; se usó un Chromium empaquetado mediante `CHROMIUM_PATH`. En la CI de GitHub se instala el de Playwright.
 

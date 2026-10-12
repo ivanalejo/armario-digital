@@ -38,6 +38,8 @@ npm run guard        # revisa que no haya datos personales versionados
 
 Para los e2e hace falta un Chromium: `npx playwright install chromium`, o `CHROMIUM_PATH=/ruta/chromium npm run e2e`.
 
+**Windows:** funciona igual desde PowerShell (usa `npm.cmd` si la directiva de ejecución bloquea `npm.ps1`). El repositorio fija fin de línea LF (`.gitattributes`), así que los archivos se extraen igual que en Linux aunque Git tenga `core.autocrlf=true`. El hook se activa con `npm ci` / `npm install` (script `prepare`, en Node); si instalas con `--ignore-scripts`, actívalo con `git config core.hooksPath .githooks`.
+
 ## Publicación en GitHub Pages
 
 1. Crea el repositorio **público** `ivanalejo/armario-digital`. En el plan gratuito, Pages solo funciona con repositorios públicos; el código es público, los datos nunca están en el repositorio.

@@ -15,7 +15,7 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "guard": "node scripts/guard-files.mjs --all",
-    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
+    "prepare": "node scripts/setup-hooks.mjs"
   },
   "dependencies": {
     "dexie": "^4.4.6",

@@ -13,6 +13,7 @@
 - Lee las fotos tal como las guardan v0.1.0 (Blob) y v0.1.1 (ArrayBuffer).
 - Pruebas: 19 unitarias y 4 e2e nuevas.
 - Con el armario vacío, Inicio no muestra el aviso de copia (no hay nada que copiar).
+- Desarrollo en Windows: los tests que validan los ejemplos de la documentación fallaban con CRLF (`core.autocrlf`); ahora se normaliza el fin de línea, hay `.gitattributes` con LF y el script `prepare` ya no usa sintaxis de shell Unix.
 
 
 ## 0.1.1 · 2026-10-11 · Corrección del bloqueo en Android
