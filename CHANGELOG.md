@@ -43,6 +43,7 @@ Integra la Fase 3 (0.2.0, nunca publicada por separado) con las copias de seguri
 - Inicio avisa si no hay copia o hay cambios sin copiar. Si el Armario está vacío, ofrece restaurar (móvil nuevo).
 - Lee las fotos tal como las guardan v0.1.0 (Blob) y v0.1.1 (ArrayBuffer).
 - Pruebas: 19 unitarias y 4 e2e nuevas.
+- Con el armario vacío, Inicio no muestra el aviso de copia (no hay nada que copiar).
 
 
 ## 0.1.1 · 2026-10-11 · Corrección del bloqueo en Android

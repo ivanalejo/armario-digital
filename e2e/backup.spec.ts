@@ -48,6 +48,8 @@ test('exportar en un dispositivo y restaurar en otro limpio: todo igual, fotos i
   // «Móvil nuevo»: otro perfil de navegador, sin datos.
   const dev = await freshDevice(browser);
   dev.page.on('request', (r: Request) => seen.push({ url: r.url(), method: r.method() }));
+  await expect(dev.page.locator('h1').first()).toBeVisible();
+  await expect(dev.page.getByTestId('backup-reminder')).toHaveCount(0); // armario vacío: sin aviso de copia
   await openRestore(dev.page, file);
   await expect(dev.page.getByTestId('count-new')).toHaveText('4');
   await dev.page.getByTestId('apply-restore').click();

@@ -89,6 +89,7 @@ export function BackupPanel() {
 export function BackupReminder() {
   const st = useBackupStatus();
   if (!st.data) return null;
+  if (!st.data.total && !st.data.last) return null; // armario vacío: no hay nada que copiar
   const d = describeBackup(st.data);
   if (d.tone === 'ok' && st.data.last) return <p className="backup-line"><Icon name="shield" size={16} /> {d.text}</p>;
   return (
